@@ -8,8 +8,10 @@
 
 #define endl std::endl
 
-std::vector<std::string> parse_string(std::string& str) {
-    std::vector<std::string> res;
+void parse_string(std::vector<std::string>& res_vec,std::string& str) {
+    // parse_string splits string by delimeter, to vec of strings
+    // from this : "site_name,email,pwd;"
+    // to this : {{"site_name", "email", "pwd"}} which is pushed to res_vec.
     std::queue<char> q;
     for (auto it = str.begin(); it != str.end(); ++it) {
         if (*it != ',' && *it != ';') {
@@ -20,18 +22,16 @@ std::vector<std::string> parse_string(std::string& str) {
                 seperate += q.front();
                 q.pop();
             }
-            res.push_back(seperate);
+            res_vec.push_back(seperate);
         }
     }
-    // for (auto it = res.begin(); it != res.end(); ++it) {
-    //     // std::string curr_line = *it;
-    //     std::cout << *it << endl;
-    // }
-    return res;
 }
 
-std::multimap<std::string, std::pair<std::string, std::string>> parse_to_map(std::vector<std::vector<std::string>> vec) {
-    std::multimap<std::string, std::pair<std::string, std::string>> map;
+void parse_to_map(std::multimap<std::string, std::pair<std::string, std::string>>& map,std::vector<std::vector<std::string>> vec) {
+    // from this : {{"site_name", "email", "pwd"}}
+    // to this :
+    // { "site_name" : <"email", "pwd"> }
+    // makes it easy to search
     for (auto it = vec.begin(); it != vec.end(); ++it) {
         std::vector<std::string> temp = *it;
         // for (auto itr = it->begin(); itr != it->end(); ++itr) {
@@ -39,17 +39,17 @@ std::multimap<std::string, std::pair<std::string, std::string>> parse_to_map(std
         // }
         map.insert({temp[0], std::make_pair(temp[1], temp[2])});
     }
-    return map;
 }
 
 int main (int argc, char *argv[]) {
     std::ifstream file;
     file.open("./passwords.txt");
     std::vector<std::string> lines;
+    // {"site_name,email,pwd;"}
     if(file.is_open()) {
         std::string curr_line;
         while (std::getline(file,curr_line)) {
-            // std::cout << curr_line << endl;
+        // curr_line : {"site_name,email,pwd;"}
             lines.push_back(curr_line);
         }
     } else {
@@ -57,21 +57,22 @@ int main (int argc, char *argv[]) {
     }
 
     std::vector<std::vector<std::string>> passwords;
+    // passwords = {{"site_name", "email", "pwd"}, {"site_name_2", "email", "pwd"}}
     for (auto it = lines.begin(); it != lines.end(); ++it) {
         std::string curr_line = *it;
-        std::vector<std::string> res = parse_string(curr_line);
+        std::vector<std::string> res;
+        parse_string(res,curr_line);
         passwords.push_back(res);
     }
 
-    std::multimap<std::string, std::pair<std::string, std::string>> map = parse_to_map(passwords);
+    std::multimap<std::string, std::pair<std::string, std::string>> map; 
+    // map : <site, <email, password>
+    parse_to_map(map, passwords);
     std::string keyToFind;
     std::getline(std::cin, keyToFind);
     auto range = map.equal_range(keyToFind);
 
     std::cout << "Values associated with key " << keyToFind << ":\n";
-    // for (auto it = range.first; it != range.second; ++it) {
-    //     std::cout << it->second.first << ", " << it->second.second << endl;
-    // }
     for (auto it = range.first; it != range.second; ++it) {
         std::cout << it->second.first << ", " << it->second.second << endl;
     }

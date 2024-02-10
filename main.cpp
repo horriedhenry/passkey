@@ -7,6 +7,7 @@
 #include <vector>
 
 #define endl std::endl
+#define passwords_file "./passwords.txt"
 
 void split_by_delim(std::vector<std::string>& res_vec,std::string& str) {
     // parse_string splits string by delimeter, to vec of strings
@@ -76,9 +77,38 @@ void get_password(std::string& site_name, std::multimap<std::string, std::pair<s
     }
 }
 
+void parse_new_line_to_map(std::multimap<std::string, std::pair<std::string, std::string>>& map, std::vector<std::string> vec) {
+    // when ever use adds a new entry in the vault, add it to the map.
+    map.insert({vec[0], std::make_pair(vec[1], vec[2])});
+}
+
+void add_new_entry(std::multimap<std::string, std::pair<std::string, std::string>>& map) {
+    std::string site_name, email, password;
+    std::cout << "site name : " << endl;
+    std::getline(std::cin, site_name);
+    std::cout << "email     : " << endl;
+    std::getline(std::cin, email);
+    std::cout << "password : " << endl;
+    std::getline(std::cin, password);
+    std::string line;
+    line.append(site_name+",");
+    line.append(email+",");
+    line.append(password+";");
+    std::ofstream ofs;
+    ofs.open(passwords_file, std::ios::app);
+    if(ofs.is_open()) {
+        ofs << line;
+    }
+    std::vector<std::string> add_line;
+    add_line.push_back(site_name);
+    add_line.push_back(email);
+    add_line.push_back(password);
+    parse_new_line_to_map(map, add_line);
+}
+
 int main (int argc, char *argv[]) {
     std::vector<std::string> lines;
-    load_passwords("./passwords.txt", lines);
+    load_passwords(passwords_file, lines);
 
     std::vector<std::vector<std::string>> passwords;
     map_passwords(passwords, lines);
@@ -86,6 +116,10 @@ int main (int argc, char *argv[]) {
     std::multimap<std::string, std::pair<std::string, std::string>> map; 
     parse_to_map(map, passwords);
 
+    std::cout << "add a password to vault : " << endl;
+    add_new_entry(map);
+
+    std::cout << "enter site name to retriever email and password info : " << endl;
     std::string site_name;
     std::getline(std::cin, site_name);
     get_password(site_name, map);

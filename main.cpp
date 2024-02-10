@@ -9,6 +9,10 @@
 #define endl std::endl
 #define passwords_file "./passwords.txt"
 
+std::vector<std::string> lines;
+std::vector<std::vector<std::string>> passwords;
+std::multimap<std::string, std::pair<std::string, std::string>> map; 
+
 void split_by_delim(std::vector<std::string>& res_vec,std::string& str) {
     // parse_string splits string by delimeter, to vec of strings
     // from this : "site_name,email,pwd;"
@@ -97,7 +101,7 @@ void add_new_entry(std::multimap<std::string, std::pair<std::string, std::string
     std::ofstream ofs;
     ofs.open(passwords_file, std::ios::app);
     if(ofs.is_open()) {
-        ofs << line;
+        ofs << line << endl;
     }
     std::vector<std::string> add_line;
     add_line.push_back(site_name);
@@ -106,21 +110,54 @@ void add_new_entry(std::multimap<std::string, std::pair<std::string, std::string
     parse_new_line_to_map(map, add_line);
 }
 
-int main (int argc, char *argv[]) {
-    std::vector<std::string> lines;
+void load_vault() {
     load_passwords(passwords_file, lines);
-
-    std::vector<std::vector<std::string>> passwords;
     map_passwords(passwords, lines);
-
-    std::multimap<std::string, std::pair<std::string, std::string>> map; 
     parse_to_map(map, passwords);
+    return;
+}
 
-    std::cout << "add a password to vault : " << endl;
-    add_new_entry(map);
+int main(int argc, char *argv[]) {
+    bool is_vault_open = true;
+    do {
+        std::cout << "usage - \n g - get entry \n a - add entry" << endl;
+        std::cout << "Enter command" << endl;
+        char command;
+        std::cin >> command;
+        switch (command) {
+            case 'g' : {
+                load_vault();
+                std::cin.ignore(); // consume newline character
+                // with .ignore() not used.. inside both get_password and add_new_entry 
+                // std::getline() is not working.. the program is not taking any input.
+                // chatgpt :
+                // the issue you're experiencing where your program does not take input correctly without std::cin.ignore() is likely due to the fact that there's a newline character left in the input buffer after reading a single character using std::cin >> command in the main function. when you subsequently call std::getline(), it reads this newline character and interprets it as an empty line, causing your input to be skipped.
+                // by using std::cin.ignore() after reading a single character, you're consuming this leftover newline character, allowing std::getline() to behave as expected.
+                std::cout << "enter site name to retrieve email and password info :" << endl;
+                std::string site_name;
+                std::getline(std::cin, site_name);
+                get_password(site_name, map);
+            } break;
+            case 'a':
+                std::cout << "add entry : " << endl;
+                std::cin.ignore(); // consume newline character
+                add_new_entry(map);
+                break;
+            default :
+                std::cout << "Wrong Input" << endl;
+                break;
+        }
+        std::cout << "close vault or use it again, e - exit, c - keep vault opened" << endl;
+        char in_out;
+        std::cin >> in_out;
+        std::cin.ignore(); // consume new line character.
+        if (in_out == 'e') {
+            is_vault_open = false;
+            break;
+        } else {
+            continue;
+        }
+    } while (is_vault_open);
 
-    std::cout << "enter site name to retriever email and password info : " << endl;
-    std::string site_name;
-    std::getline(std::cin, site_name);
-    get_password(site_name, map);
+    return 0;
 }

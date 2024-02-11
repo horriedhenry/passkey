@@ -118,46 +118,23 @@ void load_vault() {
 }
 
 int main(int argc, char *argv[]) {
-    bool is_vault_open = true;
-    do {
-        std::cout << "usage - \n g - get entry \n a - add entry" << endl;
-        std::cout << "Enter command" << endl;
-        char command;
-        std::cin >> command;
-        switch (command) {
-            case 'g' : {
-                load_vault();
-                std::cin.ignore(); // consume newline character
-                // with .ignore() not used.. inside both get_password and add_new_entry 
-                // std::getline() is not working.. the program is not taking any input.
-                // chatgpt :
-                // the issue you're experiencing where your program does not take input correctly without std::cin.ignore() is likely due to the fact that there's a newline character left in the input buffer after reading a single character using std::cin >> command in the main function. when you subsequently call std::getline(), it reads this newline character and interprets it as an empty line, causing your input to be skipped.
-                // by using std::cin.ignore() after reading a single character, you're consuming this leftover newline character, allowing std::getline() to behave as expected.
-                std::cout << "enter site name to retrieve email and password info :" << endl;
-                std::string site_name;
-                std::getline(std::cin, site_name);
-                get_password(site_name, map);
-            } break;
-            case 'a':
-                std::cout << "add entry : " << endl;
-                std::cin.ignore(); // consume newline character
-                add_new_entry(map);
-                break;
-            default :
-                std::cout << "Wrong Input" << endl;
-                break;
-        }
-        std::cout << "close vault or use it again, e - exit, c - keep vault opened" << endl;
-        char in_out;
-        std::cin >> in_out;
-        std::cin.ignore(); // consume new line character.
-        if (in_out == 'e') {
-            is_vault_open = false;
-            break;
-        } else {
-            continue;
-        }
-    } while (is_vault_open);
-
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <g - Get Entry> or <a - Add Entry>" << endl;
+        return 1;
+    }
+    const char entry = *argv[1];
+    if (entry == 'g') {
+        load_vault();
+        std::cout << "site name : " << endl;
+        std::string input;
+        getline(std::cin, input);
+        get_password(input, map);
+    } else if (entry == 'a') {
+        std::cout << "a - Add Entry " << endl;
+        add_new_entry(map);
+    } else {
+        std::cerr << "Usage: " << argv[0] << " <g - Get Entry> or <a - Add Entry>" << endl;
+        return 1;
+    }
     return 0;
 }

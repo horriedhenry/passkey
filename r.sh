@@ -1,1 +1,1 @@
-time g++ -o a main.cpp && ./a
+time g++ -o a main.cpp

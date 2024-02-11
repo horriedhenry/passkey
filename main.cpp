@@ -86,14 +86,8 @@ void parse_new_line_to_map(std::multimap<std::string, std::pair<std::string, std
     map.insert({vec[0], std::make_pair(vec[1], vec[2])});
 }
 
-void add_new_entry(std::multimap<std::string, std::pair<std::string, std::string>>& map) {
-    std::string site_name, email, password;
-    std::cout << "site name : " << endl;
-    std::getline(std::cin, site_name);
-    std::cout << "email     : " << endl;
-    std::getline(std::cin, email);
-    std::cout << "password : " << endl;
-    std::getline(std::cin, password);
+void add_new_entry(std::string site_name, std::string email, std::string password) {
+    //, std::multimap<std::string, std::pair<std::string, std::string>>& map
     std::string line;
     line.append(site_name+",");
     line.append(email+",");
@@ -103,11 +97,11 @@ void add_new_entry(std::multimap<std::string, std::pair<std::string, std::string
     if(ofs.is_open()) {
         ofs << line << endl;
     }
-    std::vector<std::string> add_line;
-    add_line.push_back(site_name);
-    add_line.push_back(email);
-    add_line.push_back(password);
-    parse_new_line_to_map(map, add_line);
+    // std::vector<std::string> add_line;
+    // add_line.push_back(site_name);
+    // add_line.push_back(email);
+    // add_line.push_back(password);
+    // parse_new_line_to_map(map, add_line);
 }
 
 void load_vault() {
@@ -118,23 +112,35 @@ void load_vault() {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <g - Get Entry> or <a - Add Entry>" << endl;
+    if (argc == 1) {
+        std::cerr << "USAGE : " << argv[0] << "  <g - Get Entry> <site_name> " << endl;
+        std::cerr << "USAGE : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password>" << endl;
         return 1;
     }
-    const char entry = *argv[1];
-    if (entry == 'g') {
-        load_vault();
-        std::cout << "site name : " << endl;
-        std::string input;
-        getline(std::cin, input);
-        get_password(input, map);
-    } else if (entry == 'a') {
-        std::cout << "a - Add Entry " << endl;
-        add_new_entry(map);
-    } else {
-        std::cerr << "Usage: " << argv[0] << " <g - Get Entry> or <a - Add Entry>" << endl;
-        return 1;
+
+    const char arg1 = (char)*argv[1]; // <g> or <a>
+    if (arg1 == 'g') {
+        if (argc != 3) {
+            std::cerr << "USAGE : " << argv[0] << "  <g - Get Entry> <site_name> " << endl;
+            return 1;
+        } else {
+            load_vault();
+            std::string site_name = (std::string )argv[2];
+            get_password(site_name, map);
+            return 0;
+        }
+    }
+    if (arg1 == 'a') {
+        if (argc != 5) {
+            std::cerr << "USAGE : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password>" << endl;
+            return 1;
+        } else {
+            std::string site_name = (std::string )argv[2];
+            std::string email = (std::string )argv[3];
+            std::string password = (std::string )argv[4];
+            add_new_entry(site_name, email, password);
+            return 0;
+        }
     }
     return 0;
 }

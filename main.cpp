@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <queue>
@@ -57,17 +58,41 @@ void load_passwords(std::string file_name) {
 }
 
 void get_password(const std::string& site_name) {
-    // TODO : Do something with entries with simillar site_name
-    // something (maybe or think of something better) : check no.of entries with simillar site_name and then allow user
-    // to filter results further to search with email in simillar site_name list of entries.
     bool found = false;
+    std::vector<entry> similar;
     for (int i = 0; i < entries.size(); i++) {
         if (entries[i].site_name == site_name) {
             found = true;
-            std::cout << "\t" << entries[i].site_name << endl;
-            std::cout << "email     : " << entries[i].email << endl;
-            std::cout << "password  : " << entries[i].password << endl;
+            similar.push_back(entries[i]);
         }
+    }
+    if (similar.size() > 1) {
+        std::cout << "[INFO] found " << similar.size() << " entries for " << similar[0].site_name << endl;
+        std::cout << "[INFO] <p - print all> or <f - filter by email> ";
+        char input;
+        std::cin >> input;
+        if (input == 'p') {
+            for (int i = 0; i < similar.size(); i++) {
+                std::cout << "\t" << similar[i].site_name << endl;
+                std::cout << "email     : " << similar[i].email << endl;
+                std::cout << "password  : " << similar[i].password << endl;
+            }
+        } else if (input == 'f') {
+            std::cout << "[INFO] Enter email" << endl;
+            std::string email;
+            std::cin >> email;
+            for (int i = 0; i < similar.size(); i++) {
+                if (similar[i].email == email) {
+                    std::cout << "\t" << similar[i].site_name << endl;
+                    std::cout << "email     : " << similar[i].email << endl;
+                    std::cout << "password  : " << similar[i].password << endl;
+                }
+            }
+        }
+    } else {
+        std::cout << "\t" << similar[0].site_name << endl;
+        std::cout << "email     : " << similar[0].email << endl;
+        std::cout << "password  : " << similar[0].password << endl;
     }
     if (!found) {
         std::cout << "[INFO] No entry found" << endl;

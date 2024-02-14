@@ -146,18 +146,40 @@ std::string load_hash_file(std::string hash_file) {
     return hash;
 }
 
+void usage() {
+    std::cout << "USAGE :" << endl;
+    std::cout << " passkey option [args]" << endl;
+    std::cout << endl;
+    std::cout << "options : " << endl;
+    std::cout << "-a, add        add new entry to vault" << endl;
+    std::cout << "-g, get        get entry from vault" << endl;
+    std::cout << endl;
+    std::cout << "args : " << endl;
+    std::cout << "-a,            [sitename email password hash_file]" << endl;
+    std::cout << "-g,            [sitename hash_file]" << endl;
+}
+
+void usage_g() {
+    std::cout << "Missing Args " << endl;
+    std::cout << " passkey g [sitename hash_file]" << endl;
+}
+
+void usage_a() {
+    std::cout << "Missing Args " << endl;
+    std::cout << " passkey a [sitename email password hash_file]" << endl;
+}
+
 int main(int argc, char *argv[]) {
     // TODO : use openssl to encrypt & decrypt password.txt
     if (argc == 1) {
-        std::cerr << "[USAGE] : " << argv[0] << "  <g - Get Entry> <site_name> <hash file> " << endl;
-        std::cerr << "[USAGE] : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password> <hash file>" << endl;
+        usage();
         exit(1);
     }
 
     const char arg1 = (char)*argv[1];
     if (arg1 == 'g') {
         if (argc != 4) {
-            std::cerr << "[USAGE] : " << argv[0] << "  <g - Get Entry> <site_name> <hash_file> " << endl;
+            usage_g();
             exit(1);
         } else {
             std::string hash = sha256(load_hash_file((std::string) argv[3]));
@@ -175,7 +197,7 @@ int main(int argc, char *argv[]) {
 
     if (arg1 == 'a') {
         if (argc != 6) {
-            std::cerr << "[USAGE] : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password> <hash_file>" << endl;
+            usage_a();
             exit(1);
         } else {
             std::string hash = sha256(load_hash_file((std::string) argv[5]));

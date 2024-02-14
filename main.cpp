@@ -1,12 +1,15 @@
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <queue>
 #include <string>
 #include <vector>
+#include <openssl/sha.h>
 
 #define endl std::endl
 #define passwords_file "./passwords.txt"
+#define HASH "c546d424016fb5b6a4cc6a0855e65113aaebcbe9933b4bd876dec776d10a5721"
 
 typedef struct entry {
     std::string site_name;
@@ -52,7 +55,8 @@ void load_passwords(std::string file_name) {
             split_by_delim(curr_line);
         }
     } else {
-        std::cout << "[INFO] File not found" << endl;
+        std::cout << "[ERROR] file not found" << endl;
+        exit(1);
     }
     file.close();
 }
@@ -66,9 +70,10 @@ void get_password(const std::string& site_name) {
             similar.push_back(entries[i]);
         }
     }
+
     if (similar.size() > 1) {
         std::cout << "[INFO] found " << similar.size() << " entries for " << similar[0].site_name << endl;
-        std::cout << "[INFO] <p - print all> or <f - filter by email> ";
+        std::cout << "[INFO] <p - print all> or <f - filter by email> " << endl;
         char input;
         std::cin >> input;
         if (input == 'p') {
@@ -94,8 +99,9 @@ void get_password(const std::string& site_name) {
         std::cout << "email     : " << similar[0].email << endl;
         std::cout << "password  : " << similar[0].password << endl;
     }
+
     if (!found) {
-        std::cout << "[INFO] No entry found" << endl;
+        std::cout << "[ERROR] no entry found" << endl;
     }
 }
 
@@ -112,36 +118,77 @@ void add_new_entry(std::string site_name, std::string email, std::string passwor
     ofs.close();
 }
 
+std::string sha256(const std::string str) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, str.c_str(), str.size());
+    SHA256_Final(hash, &sha256);
+
+    std::string hashStr;
+    hashStr.resize(SHA256_DIGEST_LENGTH * 2);
+    for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        sprintf(&hashStr[i * 2], "%02x", hash[i]);
+    }
+    return hashStr;
+}
+
+std::string load_hash_file(std::string hash_file) {
+    std::ifstream file;
+    std::string hash;
+    file.open(hash_file);
+    if (file.is_open()) {
+        std::getline(file, hash);
+    } else {
+        std::cout << "[ERROR] file not fould" << endl;
+        exit(1);
+    }
+    return hash;
+}
+
 int main(int argc, char *argv[]) {
+    // TODO : use openssl to encrypt & decrypt password.txt
     if (argc == 1) {
-        std::cerr << "USAGE : " << argv[0] << "  <g - Get Entry> <site_name> " << endl;
-        std::cerr << "USAGE : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password>" << endl;
-        return 1;
+        std::cerr << "[USAGE] : " << argv[0] << "  <g - Get Entry> <site_name> <hash file> " << endl;
+        std::cerr << "[USAGE] : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password> <hash file>" << endl;
+        exit(1);
     }
 
     const char arg1 = (char)*argv[1];
     if (arg1 == 'g') {
-        if (argc != 3) {
-            std::cerr << "USAGE : " << argv[0] << "  <g - Get Entry> <site_name> " << endl;
-            return 1;
+        if (argc != 4) {
+            std::cerr << "[USAGE] : " << argv[0] << "  <g - Get Entry> <site_name> <hash_file> " << endl;
+            exit(1);
         } else {
-            load_passwords(passwords_file);
-            std::string site_name = (std::string)argv[2];
-            get_password(site_name);
-            return 0;
+            std::string hash = sha256(load_hash_file((std::string) argv[3]));
+            if (hash == HASH) {
+                load_passwords(passwords_file);
+                std::string site_name = (std::string)argv[2];
+                get_password(site_name);
+                exit(0);
+            } else {
+                std::cout << "[ERROR] Hash decryption failed" << endl;
+                exit(1);
+            }
         }
     }
 
     if (arg1 == 'a') {
-        if (argc != 5) {
-            std::cerr << "USAGE : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password>" << endl;
-            return 1;
+        if (argc != 6) {
+            std::cerr << "[USAGE] : " << argv[0] << "  <a - Add Entry> <site_name> <email> <password> <hash_file>" << endl;
+            exit(1);
         } else {
-            std::string site_name = (std::string )argv[2];
-            std::string email = (std::string )argv[3];
-            std::string password = (std::string )argv[4];
-            add_new_entry(site_name, email, password);
-            return 0;
+            std::string hash = sha256(load_hash_file((std::string) argv[5]));
+            if (hash == HASH) {
+                std::string site_name = (std::string)argv[2];
+                std::string email = (std::string)argv[3];
+                std::string password = (std::string)argv[4];
+                add_new_entry(site_name, email, password);
+                exit(0);
+            } else {
+                std::cout << "[ERROR] Hash decryption failed" << endl;
+                exit(1);
+            }
         }
     }
     return 0;

@@ -1,5 +1,3 @@
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <queue>
@@ -47,16 +45,18 @@ void split_by_delim(std::string& str) {
 }
 
 void load_passwords(std::string file_name) {
-    std::ifstream file;
-    file.open(file_name);
+    std::ifstream file(file_name);
+    if (!file.good()) {
+        std::cout << "[FILE NOT FOUND] passwords.txt" << endl;
+        exit(1);
+    }
     if(file.is_open()) {
         std::string curr_line;
         while (std::getline(file,curr_line)) {
             split_by_delim(curr_line);
         }
     } else {
-        std::cout << "[ERROR] file not found" << endl;
-        exit(1);
+        std::cout << "[FILE] failed to read from passwords.txt" << endl;
     }
     file.close();
 }
@@ -73,7 +73,7 @@ void get_password(const std::string& site_name) {
 
     if (similar.size() > 1) {
         std::cout << "[INFO] found " << similar.size() << " entries for " << similar[0].site_name << endl;
-        std::cout << "[INFO] <p - print all> or <f - filter by email> " << endl;
+        std::cout << "[p] print all passwords\n[f] filter by email " << endl;
         char input;
         std::cin >> input;
         if (input == 'p') {
@@ -93,6 +93,9 @@ void get_password(const std::string& site_name) {
                     std::cout << "password  : " << similar[i].password << endl;
                 }
             }
+        } else {
+            std::cout << "[ERROR] wrong input" << endl;
+            exit(1);
         }
     } else {
         std::cout << "\t" << similar[0].site_name << endl;
@@ -110,12 +113,16 @@ void add_new_entry(std::string site_name, std::string email, std::string passwor
     line.append(site_name+",");
     line.append(email+",");
     line.append(password+";");
-    std::ofstream ofs;
-    ofs.open(passwords_file, std::ios::app);
+    std::ofstream ofs(passwords_file);
+    if (!ofs.good()) {
+        std::cout << "[FILE NOT FOUND] passwords.txt" << endl;
+    }
     if(ofs.is_open()) {
         ofs << line << endl;
+        ofs.close();
+    } else {
+        std::cout << "[FILE] failed to write to passwords.txt" << endl;
     }
-    ofs.close();
 }
 
 std::string sha256(const std::string str) {
@@ -140,7 +147,7 @@ std::string load_hash_file(std::string hash_file) {
     if (file.is_open()) {
         std::getline(file, hash);
     } else {
-        std::cout << "[ERROR] file not fould" << endl;
+        std::cout << "[FILE NOT FOUND] hashfile" << endl;
         exit(1);
     }
     return hash;
@@ -159,16 +166,6 @@ void usage() {
     std::cout << "-g,            [sitename hash_file]" << endl;
 }
 
-void usage_g() {
-    std::cout << "Missing Args " << endl;
-    std::cout << " passkey g [sitename hash_file]" << endl;
-}
-
-void usage_a() {
-    std::cout << "Missing Args " << endl;
-    std::cout << " passkey a [sitename email password hash_file]" << endl;
-}
-
 int main(int argc, char *argv[]) {
     // TODO : use openssl to encrypt & decrypt password.txt
     if (argc == 1) {
@@ -179,7 +176,7 @@ int main(int argc, char *argv[]) {
     const char arg1 = (char)*argv[1];
     if (arg1 == 'g') {
         if (argc != 4) {
-            usage_g();
+            usage();
             exit(1);
         } else {
             std::string hash = sha256(load_hash_file((std::string) argv[3]));
@@ -189,7 +186,8 @@ int main(int argc, char *argv[]) {
                 get_password(site_name);
                 exit(0);
             } else {
-                std::cout << "[ERROR] Hash decryption failed" << endl;
+                // std::cout << "[ERROR] Hash decryption failed" << endl;
+                std::cout << "[ERROR : main()] Hash decryption failed" << endl;
                 exit(1);
             }
         }
@@ -197,7 +195,7 @@ int main(int argc, char *argv[]) {
 
     if (arg1 == 'a') {
         if (argc != 6) {
-            usage_a();
+            usage();
             exit(1);
         } else {
             std::string hash = sha256(load_hash_file((std::string) argv[5]));
@@ -208,7 +206,7 @@ int main(int argc, char *argv[]) {
                 add_new_entry(site_name, email, password);
                 exit(0);
             } else {
-                std::cout << "[ERROR] Hash decryption failed" << endl;
+                std::cout << "[ERROR : main()] Hash decryption failed" << endl;
                 exit(1);
             }
         }

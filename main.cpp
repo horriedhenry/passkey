@@ -6,7 +6,7 @@
 #include <openssl/sha.h>
 
 #define endl std::endl
-#define passwords_file "./passwords.txt"
+#define passwords_file "./passwords.dec"
 #define HASH "c546d424016fb5b6a4cc6a0855e65113aaebcbe9933b4bd876dec776d10a5721"
 
 typedef struct entry {
@@ -47,7 +47,7 @@ void split_by_delim(std::string& str) {
 void load_passwords(std::string file_name) {
     std::ifstream file(file_name);
     if (!file.good()) {
-        std::cout << "[FILE NOT FOUND] passwords.txt" << endl;
+        std::cout << "[FILE NOT FOUND] passwords.dec" << endl;
         exit(1);
     }
     if(file.is_open()) {
@@ -56,9 +56,10 @@ void load_passwords(std::string file_name) {
             split_by_delim(curr_line);
         }
     } else {
-        std::cout << "[FILE] failed to read from passwords.txt" << endl;
+        std::cout << "[FILE] failed to read from passwords.dec" << endl;
     }
     file.close();
+    system("rm -rf ./passwords.dec");
 }
 
 void get_password(const std::string& site_name) {
@@ -109,6 +110,7 @@ void get_password(const std::string& site_name) {
 }
 
 void add_new_entry(std::string site_name, std::string email, std::string password) {
+    // TODO : add openssl auth.
     std::string line;
     line.append(site_name+",");
     line.append(email+",");
@@ -162,8 +164,57 @@ void usage() {
     std::cout << "-g, get        get entry from vault" << endl;
     std::cout << endl;
     std::cout << "args : " << endl;
-    std::cout << "-a,            [sitename email password hash_file]" << endl;
-    std::cout << "-g,            [sitename hash_file]" << endl;
+    std::cout << "-a,            [sitename email password credentials_path]" << endl;
+    std::cout << "-g,            [sitename credentials_path]" << endl;
+}
+
+bool grant_access(const std::string& path) {
+    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in access.enc -out access.dec -pass ";
+    std::string file = "file:"+ path + "key.bin ";
+    std::string iv = "-iv $(cat " + path + "iv.bin)";
+    std::string exec = cmd + file + iv;
+
+    system(exec.c_str());
+
+    std::ifstream f("./access.dec");
+    std::string curr_line;
+    bool flag = false;
+    if (!f.good()) {
+        std::cout << "[FILE NOT FOUND] ./access.enc no such file" << endl;
+        exit(1);
+    } else {
+        if (f.is_open()) {
+            std::getline(f, curr_line);
+            if (curr_line == "true") {
+                flag = true;
+            }
+        } else {
+            std::cout << "[FILE ACCESS] cannot read from ./access.enc" << endl;
+            f.close();
+            exit(1);
+        }
+    }
+    f.close();
+    system("rm -rf ./access.dec");
+    if (!flag) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+void decrypt_vault(const std::string& path) {
+    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in passwords.enc -out passwords.dec -pass ";
+    std::string file = "file:"+ path + "key.bin ";
+    std::string iv = "-iv $(cat " + path + "iv.bin)";
+    std::string exec = cmd + file + iv;
+    system(exec.c_str());
+    if (grant_access(path)) {
+        return;
+    } else {
+        std::cout << "[ACCESS DENIED] cannot decrypt vault" << endl;
+        exit(1);
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -179,17 +230,10 @@ int main(int argc, char *argv[]) {
             usage();
             exit(1);
         } else {
-            std::string hash = sha256(load_hash_file((std::string) argv[3]));
-            if (hash == HASH) {
-                load_passwords(passwords_file);
-                std::string site_name = (std::string)argv[2];
-                get_password(site_name);
-                exit(0);
-            } else {
-                // std::cout << "[ERROR] Hash decryption failed" << endl;
-                std::cout << "[ERROR : main()] Hash decryption failed" << endl;
-                exit(1);
-            }
+            decrypt_vault(argv[3]);
+            load_passwords(passwords_file);
+            get_password(argv[2]);
+            exit(0);
         }
     }
 
@@ -198,17 +242,13 @@ int main(int argc, char *argv[]) {
             usage();
             exit(1);
         } else {
-            std::string hash = sha256(load_hash_file((std::string) argv[5]));
-            if (hash == HASH) {
-                std::string site_name = (std::string)argv[2];
-                std::string email = (std::string)argv[3];
-                std::string password = (std::string)argv[4];
-                add_new_entry(site_name, email, password);
-                exit(0);
-            } else {
-                std::cout << "[ERROR : main()] Hash decryption failed" << endl;
-                exit(1);
-            }
+            // TODO : Add openssl auth.
+            decrypt_vault(argv[5]);
+            std::string site_name = (std::string)argv[2];
+            std::string email = (std::string)argv[3];
+            std::string password = (std::string)argv[4];
+            add_new_entry(site_name, email, password);
+            exit(0);
         }
     }
     return 0;

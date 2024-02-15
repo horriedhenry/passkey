@@ -3,11 +3,9 @@
 #include <queue>
 #include <string>
 #include <vector>
-#include <openssl/sha.h>
 
 #define endl std::endl
 #define passwords_file "./passwords.dec"
-#define HASH "c546d424016fb5b6a4cc6a0855e65113aaebcbe9933b4bd876dec776d10a5721"
 
 typedef struct entry {
     std::string site_name;
@@ -109,39 +107,6 @@ void get_password(const std::string& site_name) {
     }
 }
 
-void add_new_entry(std::string site_name, std::string email, std::string password) {
-    // TODO : add openssl auth.
-    std::string line;
-    line.append(site_name+",");
-    line.append(email+",");
-    line.append(password+";");
-    std::ofstream ofs(passwords_file);
-    if (!ofs.good()) {
-        std::cout << "[FILE NOT FOUND] passwords.txt" << endl;
-    }
-    if(ofs.is_open()) {
-        ofs << line << endl;
-        ofs.close();
-    } else {
-        std::cout << "[FILE] failed to write to passwords.txt" << endl;
-    }
-}
-
-std::string sha256(const std::string str) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, str.c_str(), str.size());
-    SHA256_Final(hash, &sha256);
-
-    std::string hashStr;
-    hashStr.resize(SHA256_DIGEST_LENGTH * 2);
-    for (size_t i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
-        sprintf(&hashStr[i * 2], "%02x", hash[i]);
-    }
-    return hashStr;
-}
-
 std::string load_hash_file(std::string hash_file) {
     std::ifstream file;
     std::string hash;
@@ -168,7 +133,7 @@ void usage() {
     std::cout << "-g,            [sitename credentials_path]" << endl;
 }
 
-bool grant_access(const std::string& path) {
+bool access_granted(const std::string& path) {
     std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in access.enc -out access.dec -pass ";
     std::string file = "file:"+ path + "key.bin ";
     std::string iv = "-iv $(cat " + path + "iv.bin)";
@@ -204,12 +169,12 @@ bool grant_access(const std::string& path) {
 }
 
 void decrypt_vault(const std::string& path) {
-    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in passwords.enc -out passwords.dec -pass ";
-    std::string file = "file:"+ path + "key.bin ";
-    std::string iv = "-iv $(cat " + path + "iv.bin)";
-    std::string exec = cmd + file + iv;
-    system(exec.c_str());
-    if (grant_access(path)) {
+    if (access_granted(path)) {
+        std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in passwords.enc -out passwords.dec -pass ";
+        std::string file = "file:"+ path + "key.bin ";
+        std::string iv = "-iv $(cat " + path + "iv.bin)";
+        std::string exec = cmd + file + iv;
+        system(exec.c_str());
         return;
     } else {
         std::cout << "[ACCESS DENIED] cannot decrypt vault" << endl;
@@ -217,8 +182,40 @@ void decrypt_vault(const std::string& path) {
     }
 }
 
+void encrypt_vault(const std::string& path) {
+    if (access_granted(path)) {
+        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in passwords.dec -out passwords.enc -pass ";
+        std::string file = "file:"+ path + "key.bin ";
+        std::string iv = "-iv $(cat " + path + "iv.bin)";
+        std::string exec = cmd + file + iv;
+        system(exec.c_str());
+        system("rm -rf ./passwords.dec");
+        return;
+    } else {
+        std::cout << "[ACCESS DENIED] cannot encrypt vault" << endl;
+        exit(1);
+    }
+}
+
+void add_new_entry(std::string site_name, std::string email, std::string password, const std::string& path) {
+    decrypt_vault(path);
+    std::string line;
+    line.append(site_name+",");
+    line.append(email+",");
+    line.append(password+";");
+    std::ofstream ofs;
+    ofs.open(passwords_file, std::ios::app);
+    if(ofs.is_open()) {
+        ofs << line << endl;
+    } else {
+        std::cout << "[FILE] failed to read from passwords.dec" << endl;
+        exit(1);
+    }
+    ofs.close();
+    encrypt_vault(path);
+}
+
 int main(int argc, char *argv[]) {
-    // TODO : use openssl to encrypt & decrypt password.txt
     if (argc == 1) {
         usage();
         exit(1);
@@ -242,12 +239,10 @@ int main(int argc, char *argv[]) {
             usage();
             exit(1);
         } else {
-            // TODO : Add openssl auth.
-            decrypt_vault(argv[5]);
             std::string site_name = (std::string)argv[2];
             std::string email = (std::string)argv[3];
             std::string password = (std::string)argv[4];
-            add_new_entry(site_name, email, password);
+            add_new_entry(site_name, email, password, argv[5]);
             exit(0);
         }
     }

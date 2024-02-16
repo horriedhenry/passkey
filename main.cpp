@@ -107,30 +107,20 @@ void get_password(const std::string& site_name) {
     }
 }
 
-std::string load_hash_file(std::string hash_file) {
-    std::ifstream file;
-    std::string hash;
-    file.open(hash_file);
-    if (file.is_open()) {
-        std::getline(file, hash);
-    } else {
-        std::cout << "[FILE NOT FOUND] hashfile" << endl;
-        exit(1);
-    }
-    return hash;
-}
-
 void usage() {
     std::cout << "USAGE :" << endl;
     std::cout << " passkey option [args]" << endl;
     std::cout << endl;
     std::cout << "options : " << endl;
-    std::cout << "-a, add        add new entry to vault" << endl;
-    std::cout << "-g, get        get entry from vault" << endl;
+    std::cout << "a, add        add new entry to vault" << endl;
+    std::cout << "g, get        get entry from vault" << endl;
     std::cout << endl;
     std::cout << "args : " << endl;
-    std::cout << "-a,            [sitename email password credentials_path]" << endl;
-    std::cout << "-g,            [sitename credentials_path]" << endl;
+    std::cout << "a,            [sitename email password credentials_folder_path]" << endl;
+    std::cout << "g,            [sitename credentials_folder_path]" << endl;
+    std::cout << endl;
+    std::cout << "credentials : " << endl;
+    std::cout << "credentials folder should have 'key.bin' and 'iv.bin' files" << endl;
 }
 
 bool access_granted(const std::string& path) {
@@ -144,6 +134,7 @@ bool access_granted(const std::string& path) {
     std::ifstream f("./access.dec");
     std::string curr_line;
     bool flag = false;
+
     if (!f.good()) {
         std::cout << "[FILE NOT FOUND] ./access.enc no such file" << endl;
         exit(1);
@@ -159,8 +150,10 @@ bool access_granted(const std::string& path) {
             exit(1);
         }
     }
+
     f.close();
     system("rm -rf ./access.dec");
+
     if (!flag) {
         return false;
     } else {
@@ -232,9 +225,7 @@ int main(int argc, char *argv[]) {
             get_password(argv[2]);
             exit(0);
         }
-    }
-
-    if (arg1 == 'a') {
+    } else if (arg1 == 'a') {
         if (argc != 6) {
             usage();
             exit(1);
@@ -245,6 +236,9 @@ int main(int argc, char *argv[]) {
             add_new_entry(site_name, email, password, argv[5]);
             exit(0);
         }
+    } else {
+        usage();
+        exit(1);
     }
     return 0;
 }

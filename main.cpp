@@ -2,6 +2,7 @@
 #include <fstream>
 #include <queue>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #define endl std::endl
@@ -218,58 +219,134 @@ void add_new_entry(std::string site_name, std::string email, std::string passwor
     encrypt_vault(path);
 }
 
+void delete_single_entry(const std::string& site_name, const std::string& path,  const int index) {
+    std::ofstream file("./passwords.dec", std::ios_base::app);
+    for (int i = 0; i < entries.size(); i++) {
+        if (i != index) {
+            std::string line;
+            line.append(entries[i].site_name+",");
+            line.append(entries[i].email+",");
+            line.append(entries[i].password+";");
+            file << line << endl;
+        }
+    }
+    file.close();
+    encrypt_vault(path);
+    std::cout << "[INFO] Deletion Successful" << endl;
+}
+
 void delete_entry(const std::string& site_name, const std::string& path) {
-    // TODO : what if there are multiple entries with similar sitename
     decrypt_vault(path);
     load_passwords(passwords_file);
     bool found = false;
-    int index;
+    std::vector<int> found_pos;
+    int first_found_index;
     for (int i = 0; i < entries.size(); i++) {
         if (entries[i].site_name == site_name) {
             found = true;
-            index = i;
+            first_found_index = i;
             break;
         }
     }
+    
+    for (int i = first_found_index; i < entries.size(); i++) {
+        if (entries[i].site_name == site_name) {
+            found_pos.push_back(i);
+        } else {
+            break;
+        }
+    }
+
     if (!found) {
-        std::cout << "[ABORT] no entry with " << "'" << site_name << "'" << " found in vault" << endl;
-        exit(1);
-    } else {
-        std::cout << "Are you sure you want to delete this entry" << endl;
-        std::cout << "\t" << entries[index].site_name << endl;
-        std::cout << "email     : " << entries[index].email << endl;
-        std::cout << "password  : " << entries[index].password << endl;
-        std::cout << "y/n >";
+        std::cout << "[INFO] no entry with { " << site_name << " } found" << endl;
+        exit(0);
+    }
+
+    if (found_pos.size() == 1) {
+        std::cout << "[INFO] Are you sure you want to delete this entry" << endl;
+        std::cout << "\t" << entries[first_found_index].site_name << endl;
+        std::cout << "email    : "<< entries[first_found_index].email << endl;
+        std::cout << "password : "<< entries[first_found_index].password << endl;
+        std::cout << "y/n > ";
         char input;
         std::cin >> input;
         if (input == 'y') {
-            std::ofstream file("passwords.dec", std::ios_base::app);
-            if (file.is_open()) {
+            delete_single_entry(site_name, path, first_found_index);
+            std::cout << "[INFO] Entry deleted from vault" << endl;
+            exit(0);
+        } else if (input == 'n') {
+            std::cout << "[INFO] Operation Cancelled" << endl;
+            exit(0);
+        } else {
+            std::cout << "[ABORT] Wrong input" << endl;
+            exit(1);
+        }
+    } else {
+
+        std::cout << "[INFO] found " << found_pos.size() << " entries" << endl;
+        std::cout << endl;
+        for (int i = found_pos[0]; i <= found_pos.back(); i++) {
+            std::cout << "\t[" << i << "] " << entries[i].site_name << endl;
+            std::cout << "email    : "<< entries[i].email << endl;
+            std::cout << "password : "<< entries[i].password << endl;
+            std::cout << endl;
+        }
+        std::cout << "[INFO] which one do you want to delete" << endl;
+        std::cout << "i->delete using index, m-> delete multiple entries, w->delete all" << endl;
+        std::cout << "i/m/w > ";
+        char operation;
+        std::cin >> operation;
+        if ( operation == 'i' ) {
+            int index;
+            std::cout << "[INFO] choose from above indices" << endl;
+            std::cout << "i > ";
+            std::cin >> index;
+            if (index > entries.size() - 1 || index < 0) {
+                std::cout << "[ABORT] index out of range" << endl;
+                exit(1);
+            } else {
+                delete_single_entry(site_name, path, index);
+                return;
+            }
+        } else if ( operation == 'm' ) {
+            // TODO : multiple entries
+        } else if ( operation == 'w' ) {
+
+            std::cout << "Are you sure " << endl;
+            std::cout << "y/n >" << endl;
+            char input;
+            std::cin >> input;
+            if (input == 'y') {
+
+                for (int i = found_pos[0]; i <= found_pos.back(); i++) {
+                    entries.erase(entries.begin()+i);
+                }
+
+                std::ofstream file("./passwords.dec", std::ios_base::app);
                 for (int i = 0; i < entries.size(); i++) {
-                    if (i != index) {
                         std::string line;
                         line.append(entries[i].site_name+",");
                         line.append(entries[i].email+",");
                         line.append(entries[i].password+";");
                         file << line << endl;
-                    }
                 }
+                file.close();
                 encrypt_vault(path);
-                std::cout << "[INFO] Deletion Successful" << endl;
-                return;
+                std::cout << "[INFO] Deleted all entries" << endl;
+                exit(0);
+            } else if (input == 'n') {
+                std::cout << "[INFO] operation cancelled" << endl;
+                exit(0);
             } else {
-                std::cout << "[FILE] cannot write to passwords.dec" << endl;
-                std::cout << "[ABORT] write operation failed" << endl;
+                std::cout << "[ABORT] wrong input" << endl;
                 exit(1);
             }
-        } else if (input == 'n'){
-            std::cout << "[ABORT] Deletion cancelled" << endl;
-            exit(0);
         } else {
-            std::cout << "[ABORT] Wrong option" << endl;
+            std::cout << "[ABORT] wrong input" << endl;
             exit(1);
         }
     }
+
 }
 
 int main(int argc, char *argv[]) {

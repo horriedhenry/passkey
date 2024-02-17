@@ -2,7 +2,7 @@
 #include <fstream>
 #include <queue>
 #include <string>
-#include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 #define endl std::endl
@@ -241,6 +241,7 @@ void delete_entry(const std::string& site_name, const std::string& path) {
     bool found = false;
     std::vector<int> found_pos;
     int first_found_index;
+    std::unordered_map<int, entry> map;
     for (int i = 0; i < entries.size(); i++) {
         if (entries[i].site_name == site_name) {
             found = true;
@@ -286,17 +287,18 @@ void delete_entry(const std::string& site_name, const std::string& path) {
         std::cout << "[INFO] found " << found_pos.size() << " entries" << endl;
         std::cout << endl;
         for (int i = found_pos[0]; i <= found_pos.back(); i++) {
+            map[i] = entries[i];
             std::cout << "\t[" << i << "] " << entries[i].site_name << endl;
             std::cout << "email    : "<< entries[i].email << endl;
             std::cout << "password : "<< entries[i].password << endl;
             std::cout << endl;
         }
-        std::cout << "[INFO] which one do you want to delete" << endl;
-        std::cout << "i->delete using index, m-> delete multiple entries, w->delete all" << endl;
-        std::cout << "i/m/w > ";
+        std::cout << "[INFO] choose one of the options " << endl;
+        std::cout << "s->delete single entry, m-> delete multiple entries, c->clear/delete all" << endl;
+        std::cout << "s/m/c > ";
         char operation;
         std::cin >> operation;
-        if ( operation == 'i' ) {
+        if (operation == 's') {
             int index;
             std::cout << "[INFO] choose from above indices" << endl;
             std::cout << "i > ";
@@ -305,15 +307,90 @@ void delete_entry(const std::string& site_name, const std::string& path) {
                 std::cout << "[ABORT] index out of range" << endl;
                 exit(1);
             } else {
-                delete_single_entry(site_name, path, index);
-                return;
+                std::cout << "[INFO] Are you sure.." << endl;
+                std::cout << "y/n > ";
+                char input;
+                std::cin >> input;
+                if (input == 'y') {
+                    delete_single_entry(site_name, path, index);
+                    return;
+                } else if (input == 'n') {
+                    std::cout << "[INFO] operation cancelled" << endl;
+                    exit(0);
+                } else {
+                    std::cout << "[ABORT] wrong input" << endl;
+                    exit(1);
+                }
             }
-        } else if ( operation == 'm' ) {
-            // TODO : multiple entries
-        } else if ( operation == 'w' ) {
+            // end of 'i'
+        } else if (operation == 'm') {
+            std::cout << "[INFO] Enter all the indices you want to delete. choose from above entries" << endl;
+            std::cout << "[INFO] you can specify " << found_pos.size() << " indices" << endl;
+            std::cout << "[INFO] use -1 to stop." << endl;
+            std::vector<int> delete_indices;
+            int index;
+            for (int i = 0; i < found_pos.size(); i++) {
+                std::cout << "in > ";
+                std::cin >> index;
+                if (index == -1) {
+                    break;
+                } else if (index > entries.size() - 1 || index <= -2) {
+                    std::cout << "[ABORT] index out of range" << endl;
+                    exit(1);
+                    break;
+                } else {
+                    auto it = map.find(index);
+                    if (it != map.end()) {
+                        delete_indices.push_back(index);
+                    } else {
+                        std::cout << "[ABORT] index does not map to found entries" << endl;
+                        exit(1);
+                    }
+                }
+            }
+            if (!delete_indices.empty()) {
+                std::cout << "[INFO] Are you sure.." << endl;
+                std::cout << "y/n > ";
+                char input;
+                std::cin >> input;
+                if (input == 'y') {
+                    int it = 0;
+
+                    while (it < delete_indices.size()) {
+                        entries.erase(entries.begin()+delete_indices[it]);
+                        it++;
+                    }
+
+                    std::ofstream file("./passwords.dec", std::ios_base::app);
+                    for (int i = 0; i < entries.size(); i++) {
+                        std::string line;
+                        line.append(entries[i].site_name+",");
+                        line.append(entries[i].email+",");
+                        line.append(entries[i].password+";");
+                        file << line << endl;
+                    }
+
+                    file.close();
+                    encrypt_vault(path);
+                    std::cout << "[INFO] Deleted " << delete_indices.size() << " entries" << endl;
+
+                } else if (input == 'n') {
+                    std::cout << "[INFO] operation cancelled" << endl;
+                    exit(0);
+                } else {
+                    std::cout << "[ABORT] wrong input" << endl;
+                    exit(1);
+                }
+            } else {
+                std::cout << "[INFO] No index specified" << endl;
+                std::cout << "[INFO] No entry deleted" << endl;
+                exit(1);
+            }
+            // end of 'm'
+        } else if ( operation == 'c' ) {
 
             std::cout << "Are you sure " << endl;
-            std::cout << "y/n >" << endl;
+            std::cout << "y/n > ";
             char input;
             std::cin >> input;
             if (input == 'y') {

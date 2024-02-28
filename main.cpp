@@ -9,7 +9,8 @@
 #define cout std::cout
 #define passwords_file "./passwords.dec"
 
-typedef struct entry {
+typedef struct entry
+{
     std::string site_name;
     std::string email;
     std::string password;
@@ -17,7 +18,8 @@ typedef struct entry {
 
 std::vector<entry> entries;
 
-entry alloc(std::string site_name, std::string email, std::string password) {
+entry alloc(std::string site_name, std::string email, std::string password)
+{
     entry e;
     e.site_name = site_name;
     e.email = email;
@@ -25,7 +27,8 @@ entry alloc(std::string site_name, std::string email, std::string password) {
     return e;
 }
 
-void split_by_delim(std::string& str) {
+void split_by_delim(std::string& str)
+{
     // {"site_name", "email", "pwd"}
     std::queue<char> q;
     std::vector<std::string> res_vec;
@@ -44,7 +47,8 @@ void split_by_delim(std::string& str) {
     entries.push_back(alloc(res_vec[0], res_vec[1], res_vec[2]));
 }
 
-void load_passwords(std::string file_name) {
+void load_passwords(std::string file_name)
+{
     std::ifstream file(file_name);
     if (!file.good()) {
         cout << "[FILE NOT FOUND] passwords.dec" << endl;
@@ -64,7 +68,8 @@ void load_passwords(std::string file_name) {
     system("rm -rf ./passwords.dec");
 }
 
-void get_entry(const std::string& site_name) {
+void get_entry(const std::string& site_name)
+{
     bool found = false;
     std::vector<entry> similar;
     for (int i = 0; i < entries.size(); i++) {
@@ -115,7 +120,8 @@ void get_entry(const std::string& site_name) {
     }
 }
 
-void usage() {
+void usage()
+{
     cout << "USAGE :" << endl;
     cout << " passkey option [args]" << endl;
     cout << endl;
@@ -133,7 +139,8 @@ void usage() {
     cout << "credentials folder should have 'key.bin' and 'iv.bin' files" << endl;
 }
 
-bool access_granted(const std::string& path) {
+bool access_granted(const std::string& path)
+{
     std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in access.enc -out access.dec -pass ";
     std::string file = "file:"+ path + "key.bin ";
     std::string iv = "-iv $(cat " + path + "iv.bin)";
@@ -171,7 +178,8 @@ bool access_granted(const std::string& path) {
     }
 }
 
-void decrypt_vault(const std::string& path) {
+void decrypt_vault(const std::string& path)
+{
     if (access_granted(path)) {
         std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in passwords.enc -out passwords.dec -pass ";
         std::string file = "file:"+ path + "key.bin ";
@@ -185,7 +193,8 @@ void decrypt_vault(const std::string& path) {
     }
 }
 
-void encrypt_vault(const std::string& path) {
+void encrypt_vault(const std::string& path)
+{
     if (access_granted(path)) {
         std::ofstream filet("./passwords.enc", std::ofstream::out | std::ofstream::trunc);
         filet.close();
@@ -202,7 +211,8 @@ void encrypt_vault(const std::string& path) {
     }
 }
 
-void add_new_entry(std::string site_name, std::string email, std::string password, const std::string& path) {
+void add_new_entry(std::string site_name, std::string email, std::string password, const std::string& path)
+{
     decrypt_vault(path);
     std::string line;
     line.append(site_name+",");
@@ -220,7 +230,8 @@ void add_new_entry(std::string site_name, std::string email, std::string passwor
     encrypt_vault(path);
 }
 
-void delete_single_entry(const std::string& site_name, const std::string& path,  const int index) {
+void delete_single_entry(const std::string& site_name, const std::string& path,  const int index)
+{
     std::ofstream file("./passwords.dec", std::ios_base::app);
     for (int i = 0; i < entries.size(); i++) {
         if (i != index) {
@@ -236,7 +247,8 @@ void delete_single_entry(const std::string& site_name, const std::string& path, 
     cout << "[INFO] Deletion Successful" << endl;
 }
 
-void delete_entry(const std::string& site_name, const std::string& path) {
+void delete_entry(const std::string& site_name, const std::string& path)
+{
     decrypt_vault(path);
     load_passwords(passwords_file);
     bool found = false;
@@ -427,7 +439,8 @@ void delete_entry(const std::string& site_name, const std::string& path) {
 
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     if (argc == 1) {
         usage();
         exit(1);

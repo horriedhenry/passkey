@@ -7,7 +7,7 @@
 
 #define endl std::endl
 #define cout std::cout
-#define passwords_file "./passwords.dec"
+#define passwords_file "../src/passwords.enc"
 
 typedef struct entry
 {
@@ -63,16 +63,17 @@ void load_passwords(std::string file_name)
         cout << "[FILE] failed to read from passwords.dec" << endl;
     }
     file.close();
-    std::ofstream filet("./passwords.dec", std::ofstream::out | std::ofstream::trunc);
+    std::ofstream filet("../src/passwords.dec", std::ofstream::out | std::ofstream::trunc);
     filet.close();
-    system("rm -rf ./passwords.dec");
+    system("rm -f ../src/passwords.dec");
 }
 
 void get_entry(const std::string& site_name)
 {
     bool found = false;
     std::vector<entry> similar;
-    for (int i = 0; i < entries.size(); i++) {
+    const int entrie_size = entries.size();
+    for (int i = 0; i < entrie_size; i++) {
         if (entries[i].site_name == site_name) {
             found = true;
             similar.push_back(entries[i]);
@@ -89,7 +90,8 @@ void get_entry(const std::string& site_name)
             char input;
             std::cin >> input;
             if (input == 'p') {
-                for (int i = 0; i < similar.size(); i++) {
+                const int similar_vec_size (similar.size());
+                for (int i = 0; i < similar_vec_size; i++) {
                     cout << "\t" << similar[i].site_name << endl;
                     cout << "email     : " << similar[i].email << endl;
                     cout << "password  : " << similar[i].password << endl;
@@ -98,7 +100,8 @@ void get_entry(const std::string& site_name)
                 cout << "[INFO] Enter email" << endl;
                 std::string email;
                 std::cin >> email;
-                for (int i = 0; i < similar.size(); i++) {
+                const int similar_vec_size (similar.size());
+                for (int i = 0; i < similar_vec_size; i++) {
                     if (similar[i].email == email) {
                         cout << "\t" << similar[i].site_name << endl;
                         cout << "email     : " << similar[i].email << endl;
@@ -141,19 +144,19 @@ void usage()
 
 bool access_granted(const std::string& path)
 {
-    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in access.enc -out access.dec -pass ";
+    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/access.enc -out ../src/access.dec -pass ";
     std::string file = "file:"+ path + "key.bin ";
     std::string iv = "-iv $(cat " + path + "iv.bin)";
     std::string exec = cmd + file + iv;
 
     system(exec.c_str());
 
-    std::ifstream f("./access.dec");
+    std::ifstream f("../src/access.dec");
     std::string curr_line;
     bool flag = false;
 
     if (!f.good()) {
-        cout << "[FILE NOT FOUND] ./access.enc no such file" << endl;
+        cout << "[FILE NOT FOUND] ../src/access.enc no such file" << endl;
         exit(1);
     } else {
         if (f.is_open()) {
@@ -162,14 +165,14 @@ bool access_granted(const std::string& path)
                 flag = true;
             }
         } else {
-            cout << "[FILE ACCESS] cannot read from ./access.enc" << endl;
+            cout << "[FILE ACCESS] cannot read from ../src/access.enc" << endl;
             f.close();
             exit(1);
         }
     }
 
     f.close();
-    system("rm -rf ./access.dec");
+    system("rm -f ../src/access.dec");
 
     if (!flag) {
         return false;
@@ -181,7 +184,7 @@ bool access_granted(const std::string& path)
 void decrypt_vault(const std::string& path)
 {
     if (access_granted(path)) {
-        std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in passwords.enc -out passwords.dec -pass ";
+        std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/passwords.enc -out ../src/passwords.dec -pass ";
         std::string file = "file:"+ path + "key.bin ";
         std::string iv = "-iv $(cat " + path + "iv.bin)";
         std::string exec = cmd + file + iv;
@@ -196,14 +199,14 @@ void decrypt_vault(const std::string& path)
 void encrypt_vault(const std::string& path)
 {
     if (access_granted(path)) {
-        std::ofstream filet("./passwords.enc", std::ofstream::out | std::ofstream::trunc);
+        std::ofstream filet("../src/passwords.enc", std::ofstream::out | std::ofstream::trunc);
         filet.close();
-        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in passwords.dec -out passwords.enc -pass ";
+        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in ../src/passwords.dec -out ../src/passwords.enc -pass ";
         std::string file = "file:"+ path + "key.bin ";
         std::string iv = "-iv $(cat " + path + "iv.bin)";
         std::string exec = cmd + file + iv;
         system(exec.c_str());
-        system("rm -rf ./passwords.dec");
+        system("rm -rf ../src/passwords.dec");
         return;
     } else {
         cout << "[ACCESS DENIED] cannot encrypt vault" << endl;
@@ -232,8 +235,9 @@ void add_new_entry(std::string site_name, std::string email, std::string passwor
 
 void delete_single_entry(const std::string& site_name, const std::string& path,  const int index)
 {
-    std::ofstream file("./passwords.dec", std::ios_base::app);
-    for (int i = 0; i < entries.size(); i++) {
+    std::ofstream file("../src/passwords.dec", std::ios_base::app);
+    const int entries_size (entries.size());
+    for (int i = 0; i < entries_size; i++) {
         if (i != index) {
             std::string line;
             line.append(entries[i].site_name+",");
@@ -255,7 +259,8 @@ void delete_entry(const std::string& site_name, const std::string& path)
     std::vector<int> found_pos;
     int first_found_index;
     std::unordered_map<int, entry> map;
-    for (int i = 0; i < entries.size(); i++) {
+    const int entries_size (entries.size());
+    for (int i = 0; i < entries_size; i++) {
         if (entries[i].site_name == site_name) {
             found = true;
             first_found_index = i;
@@ -263,7 +268,7 @@ void delete_entry(const std::string& site_name, const std::string& path)
         }
     }
     
-    for (int i = first_found_index; i < entries.size(); i++) {
+    for (int i = first_found_index; i < entries_size; i++) {
         if (entries[i].site_name == site_name) {
             found_pos.push_back(i);
         } else {
@@ -316,7 +321,8 @@ void delete_entry(const std::string& site_name, const std::string& path)
             cout << "[INFO] choose from above indices" << endl;
             cout << "i > ";
             std::cin >> index;
-            if (index > entries.size() - 1 || index < 0) {
+            const int entries_size (entries.size());
+            if (index > entries_size - 1 || index < 0) {
                 cout << "[ABORT] index out of range" << endl;
                 exit(1);
             } else {
@@ -342,12 +348,13 @@ void delete_entry(const std::string& site_name, const std::string& path)
             cout << "[INFO] use -1 to stop." << endl;
             std::vector<int> delete_indices;
             int index;
-            for (int i = 0; i < found_pos.size(); i++) {
+            const int found_pos_size (found_pos.size());
+            for (int i = 0; i < found_pos_size; i++) {
                 cout << "in > ";
                 std::cin >> index;
                 if (index == -1) {
                     break;
-                } else if (index > entries.size() - 1 || index <= -2) {
+                } else if (index > entries_size - 1 || index <= -2) {
                     cout << "[ABORT] index out of range" << endl;
                     exit(1);
                     break;
@@ -369,13 +376,15 @@ void delete_entry(const std::string& site_name, const std::string& path)
                 if (input == 'y') {
                     int it = 0;
 
-                    while (it < delete_indices.size()) {
+                    const int delete_indices_size (delete_indices.size());
+                    while (it < delete_indices_size) {
                         entries.erase(entries.begin()+delete_indices[it]);
                         it++;
                     }
 
-                    std::ofstream file("./passwords.dec", std::ios_base::app);
-                    for (int i = 0; i < entries.size(); i++) {
+                    std::ofstream file("../src/passwords.dec", std::ios_base::app);
+                    const int entries_size (entries.size());
+                    for (int i = 0; i < entries_size; i++) {
                         std::string line;
                         line.append(entries[i].site_name+",");
                         line.append(entries[i].email+",");
@@ -408,12 +417,13 @@ void delete_entry(const std::string& site_name, const std::string& path)
             std::cin >> input;
             if (input == 'y') {
 
-                for (int i = found_pos[0]; i <= found_pos.back(); i++) {
+                const int found_pos_size (found_pos.size());
+                for (int i = found_pos[0]; i <= found_pos_size; i++) {
                     entries.erase(entries.begin()+i);
                 }
 
-                std::ofstream file("./passwords.dec", std::ios_base::app);
-                for (int i = 0; i < entries.size(); i++) {
+                std::ofstream file("../src/passwords.dec", std::ios_base::app);
+                for (int i = 0; i < entries_size; i++) {
                         std::string line;
                         line.append(entries[i].site_name+",");
                         line.append(entries[i].email+",");

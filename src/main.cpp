@@ -5,8 +5,6 @@
 #include <unordered_map>
 #include <vector>
 
-#define endl std::endl
-#define cout std::cout
 #define passwords_file "../src/passwords.enc"
 
 typedef struct entry
@@ -47,11 +45,16 @@ void split_by_delim(std::string& str)
     entries.push_back(alloc(res_vec[0], res_vec[1], res_vec[2]));
 }
 
+void std_out(std::string&& log)
+{
+    std::cout << log << std::endl;
+}
+
 void load_passwords(std::string file_name)
 {
     std::ifstream file(file_name);
     if (!file.good()) {
-        cout << "[FILE NOT FOUND] passwords.dec" << endl;
+        std_out("[FILE NOT FOUND] passwords.dec");
         exit(1);
     }
     if(file.is_open()) {
@@ -60,7 +63,7 @@ void load_passwords(std::string file_name)
             split_by_delim(curr_line);
         }
     } else {
-        cout << "[FILE] failed to read from passwords.dec" << endl;
+        std_out("[FILE] failed to read from passwords.dec");
     }
     file.close();
     std::ofstream filet("../src/passwords.dec", std::ofstream::out | std::ofstream::trunc);
@@ -81,65 +84,65 @@ void get_entry(const std::string& site_name)
     }
 
     if (!found) {
-        cout << "[ERROR] no entry found" << endl;
+        std_out("[ERROR] no entry found");
     } else {
         if (similar.size() > 1) {
-            cout << "[INFO] found " << similar.size() << " entries for " << similar[0].site_name << endl;
-            cout << "[p] print all passwords\n[f] filter by email " << endl;
-            cout << "p/f >";
+            std_out("[INFO] found " + std::to_string(similar.size()) + " entries for " + similar[0].site_name);
+            std_out("[p] print all passwords\n[f] filter by email ");
+            std::cout << "p/f >";
             char input;
             std::cin >> input;
             if (input == 'p') {
                 const int similar_vec_size (similar.size());
                 for (int i = 0; i < similar_vec_size; i++) {
-                    cout << "\t" << similar[i].site_name << endl;
-                    cout << "email     : " << similar[i].email << endl;
-                    cout << "password  : " << similar[i].password << endl;
+                    std_out("\t" + similar[i].site_name);
+                    std_out("email     : " + similar[i].email);
+                    std_out("password  : " + similar[i].password);
                 }
             } else if (input == 'f') {
-                cout << "[INFO] Enter email" << endl;
+                std_out("[INFO] Enter email");
                 std::string email;
                 std::cin >> email;
                 const int similar_vec_size (similar.size());
                 for (int i = 0; i < similar_vec_size; i++) {
                     if (similar[i].email == email) {
-                        cout << "\t" << similar[i].site_name << endl;
-                        cout << "email     : " << similar[i].email << endl;
-                        cout << "password  : " << similar[i].password << endl;
+                        std_out("\t" + similar[i].site_name);
+                        std_out("email     : " + similar[i].email);
+                        std_out("password  : " + similar[i].password);
                     } else {
-                        cout << "[ERROR] Did not find any entry with " << email << endl;
+                        std_out("[ERROR] Did not find any entry with " + email);
                         exit(1);
                     }
                 }
             } else {
-                cout << "[ERROR] wrong input" << endl;
+                std_out("[ERROR] wrong input");
                 exit(1);
             }
         } else {
-            cout << "\t" << similar[0].site_name << endl;
-            cout << "email     : " << similar[0].email << endl;
-            cout << "password  : " << similar[0].password << endl;
+            std_out("\t" + similar[0].site_name);
+            std_out("email     : " + similar[0].email);
+            std_out("password  : " + similar[0].password);
         }
     }
 }
 
 void usage()
 {
-    cout << "USAGE :" << endl;
-    cout << " passkey option [args]" << endl;
-    cout << endl;
-    cout << "options : " << endl;
-    cout << "a, add        add new entry to vault" << endl;
-    cout << "g, get        get entry from vault" << endl;
-    cout << "d, delete     delete entry from vault" << endl;
-    cout << endl;
-    cout << "args : " << endl;
-    cout << "a,            [sitename email password credentials_folder_path]" << endl;
-    cout << "g,            [sitename credentials_folder_path]" << endl;
-    cout << "d,            [sitename credentials_folder_path]" << endl;
-    cout << endl;
-    cout << "credentials : " << endl;
-    cout << "credentials folder should have 'key.bin' and 'iv.bin' files" << endl;
+    std_out("USAGE :");
+    std_out(" passkey option [args]");
+    std_out("");
+    std_out("options : ");
+    std_out("a, add        add new entry to vault");
+    std_out("g, get        get entry from vault");
+    std_out("d, delete     delete entry from vault");
+    std_out("");
+    std_out("args : ");
+    std_out("a,            [sitename email password credentials_folder_path]");
+    std_out("g,            [sitename credentials_folder_path]");
+    std_out("d,            [sitename credentials_folder_path]");
+    std_out("");
+    std_out("credentials : ");
+    std_out("credentials folder should have 'key.bin' and 'iv.bin' files");
 }
 
 bool access_granted(const std::string& path)
@@ -156,7 +159,7 @@ bool access_granted(const std::string& path)
     bool flag = false;
 
     if (!f.good()) {
-        cout << "[FILE NOT FOUND] ../src/access.enc no such file" << endl;
+        std_out("[FILE NOT FOUND] ../src/access.enc no such file");
         exit(1);
     } else {
         if (f.is_open()) {
@@ -165,7 +168,7 @@ bool access_granted(const std::string& path)
                 flag = true;
             }
         } else {
-            cout << "[FILE ACCESS] cannot read from ../src/access.enc" << endl;
+            std_out("[FILE ACCESS] cannot read from ../src/access.enc");
             f.close();
             exit(1);
         }
@@ -191,7 +194,7 @@ void decrypt_vault(const std::string& path)
         system(exec.c_str());
         return;
     } else {
-        cout << "[ACCESS DENIED] cannot decrypt vault" << endl;
+        std_out("[ACCESS DENIED] cannot decrypt vault");
         exit(1);
     }
 }
@@ -209,7 +212,7 @@ void encrypt_vault(const std::string& path)
         system("rm -rf ../src/passwords.dec");
         return;
     } else {
-        cout << "[ACCESS DENIED] cannot encrypt vault" << endl;
+        std_out("[ACCESS DENIED] cannot encrypt vault");
         exit(1);
     }
 }
@@ -224,9 +227,9 @@ void add_new_entry(std::string site_name, std::string email, std::string passwor
     std::ofstream ofs;
     ofs.open(passwords_file, std::ios::app);
     if(ofs.is_open()) {
-        ofs << line << endl;
+        ofs << line << "\n";
     } else {
-        cout << "[FILE] failed to read from passwords.dec" << endl;
+        std_out("[FILE] failed to read from passwords.dec");
         exit(1);
     }
     ofs.close();
@@ -243,12 +246,12 @@ void delete_single_entry(const std::string& site_name, const std::string& path, 
             line.append(entries[i].site_name+",");
             line.append(entries[i].email+",");
             line.append(entries[i].password+";");
-            file << line << endl;
+            file << line << "\n";
         }
     }
     file.close();
     encrypt_vault(path);
-    cout << "[INFO] Deletion Successful" << endl;
+    std_out("[INFO] Deletion Successful");
 }
 
 void delete_entry(const std::string& site_name, const std::string& path)
@@ -277,85 +280,84 @@ void delete_entry(const std::string& site_name, const std::string& path)
     }
 
     if (!found) {
-        cout << "[INFO] no entry with { " << site_name << " } found" << endl;
+        std_out("[INFO] no entry with { " + site_name + " } found");
         exit(0);
     }
 
     if (found_pos.size() == 1) {
-        cout << "[INFO] Are you sure you want to delete this entry" << endl;
-        cout << "\t" << entries[first_found_index].site_name << endl;
-        cout << "email    : "<< entries[first_found_index].email << endl;
-        cout << "password : "<< entries[first_found_index].password << endl;
-        cout << "y/n > ";
+        std_out("[INFO] Are you sure you want to delete this entry");
+
+        std_out("\t" + entries[first_found_index].site_name);
+        std_out("email     : " + entries[first_found_index].email);
+        std_out("password  : " + entries[first_found_index].password);
+        std::cout << "y/n > ";
         char input;
         std::cin >> input;
         if (input == 'y') {
             delete_single_entry(site_name, path, first_found_index);
-            cout << "[INFO] Entry deleted from vault" << endl;
+            std_out("[INFO] Entry deleted from vault");
             exit(0);
         } else if (input == 'n') {
-            cout << "[INFO] Operation Cancelled" << endl;
+            std_out("[INFO] Operation Cancelled");
             exit(0);
         } else {
-            cout << "[ABORT] Wrong input" << endl;
+            std_out("[ABORT] Wrong input");
             exit(1);
         }
     } else {
 
-        cout << "[INFO] found " << found_pos.size() << " entries" << endl;
-        cout << endl;
+        std_out("[INFO] found " + std::to_string(found_pos.size()) + " entries");
         for (int i = found_pos[0]; i <= found_pos.back(); i++) {
             map[i] = entries[i];
-            cout << "\t[" << i << "] " << entries[i].site_name << endl;
-            cout << "email    : "<< entries[i].email << endl;
-            cout << "password : "<< entries[i].password << endl;
-            cout << endl;
+            std_out("\t[" + std::to_string(i) + "] " + entries[i].site_name);
+            std_out("email     : " + entries[i].email);
+            std_out("password  : " + entries[i].password);
         }
-        cout << "[INFO] choose one of the options " << endl;
-        cout << "s->delete single entry, m-> delete multiple entries, c->clear/delete all" << endl;
-        cout << "s/m/c > ";
+        std_out("[INFO] choose one of the options ");
+        std_out("s->delete single entry, m-> delete multiple entries, c->clear/delete all");
+        std::cout << "s/m/c > ";
         char operation;
         std::cin >> operation;
         if (operation == 's') {
             int index;
-            cout << "[INFO] choose from above indices" << endl;
-            cout << "i > ";
+            std_out("[INFO] choose from above indices");
+            std::cout << "i > ";
             std::cin >> index;
             const int entries_size (entries.size());
             if (index > entries_size - 1 || index < 0) {
-                cout << "[ABORT] index out of range" << endl;
+                std_out("[ABORT] index out of range");
                 exit(1);
             } else {
-                cout << "[INFO] Are you sure.." << endl;
-                cout << "y/n > ";
+                std_out("[INFO] Are you sure..");
+                std::cout << "y/n > ";
                 char input;
                 std::cin >> input;
                 if (input == 'y') {
                     delete_single_entry(site_name, path, index);
                     return;
                 } else if (input == 'n') {
-                    cout << "[INFO] operation cancelled" << endl;
+                    std_out("[INFO] operation cancelled");
                     exit(0);
                 } else {
-                    cout << "[ABORT] wrong input" << endl;
+                    std_out("[ABORT] wrong input");
                     exit(1);
                 }
             }
             // end of 'i'
         } else if (operation == 'm') {
-            cout << "[INFO] Enter all the indices you want to delete. choose from above entries" << endl;
-            cout << "[INFO] you can specify " << found_pos.size() << " indices" << endl;
-            cout << "[INFO] use -1 to stop." << endl;
+            std_out("[INFO] Enter all the indices you want to delete. choose from above entries");
+            std_out("[INFO] you can specify " + std::to_string(found_pos.size()) + " indices");
+            std_out("[INFO] use -1 to stop.");
             std::vector<int> delete_indices;
             int index;
             const int found_pos_size (found_pos.size());
             for (int i = 0; i < found_pos_size; i++) {
-                cout << "in > ";
+                std::cout << "in > ";
                 std::cin >> index;
                 if (index == -1) {
                     break;
                 } else if (index > entries_size - 1 || index <= -2) {
-                    cout << "[ABORT] index out of range" << endl;
+                    std_out("[ABORT] index out of range");
                     exit(1);
                     break;
                 } else {
@@ -363,14 +365,13 @@ void delete_entry(const std::string& site_name, const std::string& path)
                     if (it != map.end()) {
                         delete_indices.push_back(index);
                     } else {
-                        cout << "[ABORT] index does not map to found entries" << endl;
+                        std_out("[ABORT] index does not map to found entries");
                         exit(1);
                     }
                 }
             }
             if (!delete_indices.empty()) {
-                cout << "[INFO] Are you sure.." << endl;
-                cout << "y/n > ";
+                std_out(std::string("[INFO] Are you sure..") + "y/n > ");
                 char input;
                 std::cin >> input;
                 if (input == 'y') {
@@ -389,30 +390,29 @@ void delete_entry(const std::string& site_name, const std::string& path)
                         line.append(entries[i].site_name+",");
                         line.append(entries[i].email+",");
                         line.append(entries[i].password+";");
-                        file << line << endl;
+                        file << line << "\n";
                     }
 
                     file.close();
                     encrypt_vault(path);
-                    cout << "[INFO] Deleted " << delete_indices.size() << " entries" << endl;
+                    std_out("[INFO] Deleted " + std::to_string(delete_indices.size()) + " entries" );
 
                 } else if (input == 'n') {
-                    cout << "[INFO] operation cancelled" << endl;
+                    std_out("[INFO] operation cancelled");
                     exit(0);
                 } else {
-                    cout << "[ABORT] wrong input" << endl;
+                    std_out("[ABORT] wrong input");
                     exit(1);
                 }
             } else {
-                cout << "[INFO] No index specified" << endl;
-                cout << "[INFO] No entry deleted" << endl;
+                std_out("[INFO] No index specified" + std::string("[INFO] No entry deleted"));
                 exit(1);
             }
             // end of 'm'
         } else if ( operation == 'c' ) {
 
-            cout << "Are you sure " << endl;
-            cout << "y/n > ";
+            std_out("Are you sure ");
+            std::cout << "y/n > ";
             char input;
             std::cin >> input;
             if (input == 'y') {
@@ -428,21 +428,22 @@ void delete_entry(const std::string& site_name, const std::string& path)
                         line.append(entries[i].site_name+",");
                         line.append(entries[i].email+",");
                         line.append(entries[i].password+";");
-                        file << line << endl;
+                        file << line << "\n";
                 }
                 file.close();
                 encrypt_vault(path);
-                cout << "[INFO] Deleted all entries" << endl;
+                std_out("[INFO] Deleted all entries");
                 exit(0);
             } else if (input == 'n') {
-                cout << "[INFO] operation cancelled" << endl;
+                std_out("[INFO] operation cancelled");
                 exit(0);
             } else {
-                cout << "[ABORT] wrong input" << endl;
+                std_out("[ABORT] wrong input");
                 exit(1);
             }
+            // end of c
         } else {
-            cout << "[ABORT] wrong input" << endl;
+            std_out("[ABORT] wrong input");
             exit(1);
         }
     }

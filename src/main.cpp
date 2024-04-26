@@ -17,7 +17,7 @@ typedef struct entry
 
 std::vector<entry> entries;
 
-entry alloc(std::string site_name, std::string email, std::string password)
+entry alloc(std::string& site_name, std::string& email, std::string& password)
 {
     entry e;
     e.site_name = site_name;
@@ -76,7 +76,7 @@ void std_out(std::string&& log)
     std::cout << log << std::endl;
 }
 
-void load_passwords(std::string file_name)
+void load_passwords(const std::string& file_name)
 {
     std::ifstream file(file_name);
     if (!file.good()) {
@@ -243,7 +243,7 @@ void encrypt_vault(const std::string& path)
     }
 }
 
-void add_new_entry(std::string site_name, std::string email, std::string password, const std::string& path)
+void add_new_entry(std::string& site_name, std::string& email, std::string& password, const std::string& path)
 {
     decrypt_vault(path);
     std::string line;

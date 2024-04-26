@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -25,22 +24,46 @@ entry alloc(std::string site_name, std::string email, std::string password)
     return e;
 }
 
-void split_by_delim(std::string& str)
+void remove_trailing_space(std::string& tmp)
 {
-    // {"site_name", "email", "pwd"}
-    std::queue<char> q;
-    std::vector<std::string> res_vec;
-    for (auto it = str.begin(); it != str.end(); ++it) {
-        if (*it != ',' && *it != ';') {
-            q.push(*it);
-        } else {
-            std::string seperate = "";
-            while(!q.empty()) {
-                seperate += q.front();
-                q.pop();
-            }
-            res_vec.push_back(seperate);
+    int size = tmp.size() - 1;
+    if (tmp[0] == ';') {
+        while (!tmp.empty() && tmp[0] == ';') {
+            tmp.erase(0, 1);
         }
+    }
+
+    size = tmp.size() - 1;
+    if (tmp[size] == ';') {
+        while (size >= 0 && tmp[size] == ';') {
+            tmp.pop_back();
+            size--;
+        }
+    }
+}
+
+void split_string(std::string& input_str)
+{
+    const char delimiter = ';';
+    const int size = input_str.size() - 1;
+    std::string tmp_str;
+    std::vector<std::string> res_vec;
+
+    for (int itr = 0; itr <= size; itr++) {
+        if (input_str[itr] == delimiter) {
+            if (!tmp_str.empty()) {
+                remove_trailing_space(tmp_str);
+                res_vec.push_back(tmp_str);
+                tmp_str.clear();
+            }
+        } else {
+            tmp_str.push_back(input_str[itr]);
+        }
+    }
+
+    if (!tmp_str.empty()) {
+        remove_trailing_space(tmp_str);
+        res_vec.push_back(tmp_str);
     }
     entries.push_back(alloc(res_vec[0], res_vec[1], res_vec[2]));
 }
@@ -52,7 +75,7 @@ void std_out(std::string&& log)
 
 void load_passwords(std::string file_name)
 {
-    std::ifstream file(file_name);
+    std::ifstream file("../src/passwords.dec");
     if (!file.good()) {
         std_out("[FILE NOT FOUND] passwords.dec");
         exit(1);
@@ -60,7 +83,7 @@ void load_passwords(std::string file_name)
     if(file.is_open()) {
         std::string curr_line;
         while (std::getline(file,curr_line)) {
-            split_by_delim(curr_line);
+            split_string(curr_line);
         }
     } else {
         std_out("[FILE] failed to read from passwords.dec");
@@ -221,11 +244,11 @@ void add_new_entry(std::string site_name, std::string email, std::string passwor
 {
     decrypt_vault(path);
     std::string line;
-    line.append(site_name+",");
-    line.append(email+",");
+    line.append(site_name+";");
+    line.append(email+";");
     line.append(password+";");
     std::ofstream ofs;
-    ofs.open(passwords_file, std::ios::app);
+    ofs.open("../src/passwords.dec", std::ios::app);
     if(ofs.is_open()) {
         ofs << line << "\n";
     } else {

@@ -3,8 +3,10 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <cstdlib>
 
-#define passwords_file "../src/passwords.enc"
+#define passwords_file "../src/passwords.dec"
+#define credentials_path getenv("credentials_path")
 
 typedef struct entry
 {
@@ -75,7 +77,7 @@ void std_out(std::string&& log)
 
 void load_passwords(std::string file_name)
 {
-    std::ifstream file("../src/passwords.dec");
+    std::ifstream file(file_name);
     if (!file.good()) {
         std_out("[FILE NOT FOUND] passwords.dec");
         exit(1);
@@ -266,8 +268,8 @@ void delete_single_entry(const std::string& site_name, const std::string& path, 
     for (int i = 0; i < entries_size; i++) {
         if (i != index) {
             std::string line;
-            line.append(entries[i].site_name+",");
-            line.append(entries[i].email+",");
+            line.append(entries[i].site_name+";");
+            line.append(entries[i].email+";");
             line.append(entries[i].password+";");
             file << line << "\n";
         }
@@ -410,8 +412,8 @@ void delete_entry(const std::string& site_name, const std::string& path)
                     const int entries_size (entries.size());
                     for (int i = 0; i < entries_size; i++) {
                         std::string line;
-                        line.append(entries[i].site_name+",");
-                        line.append(entries[i].email+",");
+                        line.append(entries[i].site_name+";");
+                        line.append(entries[i].email+";");
                         line.append(entries[i].password+";");
                         file << line << "\n";
                     }
@@ -448,8 +450,8 @@ void delete_entry(const std::string& site_name, const std::string& path)
                 std::ofstream file("../src/passwords.dec", std::ios_base::app);
                 for (int i = 0; i < entries_size; i++) {
                         std::string line;
-                        line.append(entries[i].site_name+",");
-                        line.append(entries[i].email+",");
+                        line.append(entries[i].site_name+";");
+                        line.append(entries[i].email+";");
                         line.append(entries[i].password+";");
                         file << line << "\n";
                 }
@@ -482,33 +484,33 @@ int main(int argc, char *argv[])
 
     const char arg1 = (char)*argv[1];
     if (arg1 == 'g') {
-        if (argc != 4) {
+        if (argc != 3) {
             usage();
             exit(1);
         } else {
-            decrypt_vault(argv[3]);
+            decrypt_vault(credentials_path);
             load_passwords(passwords_file);
             get_entry(argv[2]);
             exit(0);
         }
     } else if (arg1 == 'a') {
-        if (argc != 6) {
+        if (argc != 5) {
             usage();
             exit(1);
         } else {
             std::string site_name = (std::string)argv[2];
             std::string email = (std::string)argv[3];
             std::string password = (std::string)argv[4];
-            add_new_entry(site_name, email, password, argv[5]);
+            add_new_entry(site_name, email, password, credentials_path);
             exit(0);
         }
     } else if (arg1 == 'd') {
-        if (argc != 4) {
+        if (argc != 3) {
             usage();
             exit(1);
         } else {
             std::string site_name = (std::string)argv[2];
-            delete_entry(site_name, argv[3]);
+            delete_entry(site_name, credentials_path);
         }
     } else {
         usage();

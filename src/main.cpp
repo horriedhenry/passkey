@@ -28,20 +28,16 @@ entry alloc(std::string& site_name, std::string& email, std::string& password)
 
 void remove_trailing_space(std::string& tmp)
 {
-    int size = tmp.size() - 1;
-    const char delimiter {' '};
-    if (tmp[0] == delimiter) {
-        while (!tmp.empty() && tmp[0] == delimiter) {
-            tmp.erase(0, 1);
+    const char space {' '};
+    if (tmp[0] == space) {
+        int itr {0};
+        while (tmp[itr] == space) {
+            itr++;
         }
+        tmp = tmp.substr(itr);
     }
-
-    size = tmp.size() - 1;
-    if (tmp[size] == delimiter) {
-        while (size >= 0 && tmp[size] == delimiter) {
-            tmp.pop_back();
-            size--;
-        }
+    while(tmp.back() == space) {
+        tmp.pop_back();
     }
 }
 

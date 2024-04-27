@@ -26,10 +26,10 @@ entry alloc(std::string& site_name, std::string& email, std::string& password)
     return e;
 }
 
-void remove_trailing_delimeter(std::string& tmp)
+void remove_trailing_space(std::string& tmp)
 {
     int size = tmp.size() - 1;
-    const char delimiter {';'};
+    const char delimiter {' '};
     if (tmp[0] == delimiter) {
         while (!tmp.empty() && tmp[0] == delimiter) {
             tmp.erase(0, 1);
@@ -55,7 +55,7 @@ void split_string(std::string& input_str)
     for (int itr = 0; itr <= size; itr++) {
         if (input_str[itr] == delimiter) {
             if (!tmp_str.empty()) {
-                remove_trailing_delimeter(tmp_str);
+                remove_trailing_space(tmp_str);
                 res_vec.push_back(tmp_str);
                 tmp_str.clear();
             }
@@ -65,7 +65,7 @@ void split_string(std::string& input_str)
     }
 
     if (!tmp_str.empty()) {
-        remove_trailing_delimeter(tmp_str);
+        remove_trailing_space(tmp_str);
         res_vec.push_back(tmp_str);
     }
     entries.push_back(alloc(res_vec[0], res_vec[1], res_vec[2]));

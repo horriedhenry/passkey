@@ -5,8 +5,9 @@
 #include <vector>
 #include <cstdlib>
 
-#define passwords_file "../src/passwords.dec"
-#define credentials_path getenv("credentials_path")
+std::string credentials_path = getenv("credentials_path");
+std::string passwords_file_dec = credentials_path + "passwords.dec";
+std::string passwords_file_enc = credentials_path + "passwords.enc";
 
 typedef struct entry
 {
@@ -72,9 +73,9 @@ void std_out(std::string&& log)
     std::cout << log << std::endl;
 }
 
-void load_passwords(const std::string& file_name)
+void load_passwords()
 {
-    std::ifstream file(file_name);
+    std::ifstream file(passwords_file_dec);
     if (!file.good()) {
         std_out("[FILE NOT FOUND] passwords.dec");
         exit(1);
@@ -88,9 +89,15 @@ void load_passwords(const std::string& file_name)
         std_out("[FILE] failed to read from passwords.dec");
     }
     file.close();
-    std::ofstream filet("../src/passwords.dec", std::ofstream::out | std::ofstream::trunc);
+
+    /*std::ofstream filet("../src/passwords.dec", std::ofstream::out | std::ofstream::trunc);*/
+    std::ofstream filet(passwords_file_dec, std::ofstream::out | std::ofstream::trunc);
     filet.close();
-    system("rm -f ../src/passwords.dec");
+
+    /*system("rm -f ../src/passwords.dec");*/
+    std::string delete_file_path { passwords_file_dec };
+    std::string delete_command { "rm -f " + delete_file_path };
+    system(delete_command.c_str());
 }
 
 void get_entry(const std::string& site_name)
@@ -167,21 +174,27 @@ void usage()
     std_out("credentials folder should have 'key.bin' and 'iv.bin' files");
 }
 
-bool access_granted(const std::string& path)
+bool access_granted()
 {
-    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/access.enc -out ../src/access.dec -pass ";
-    std::string file = "file:"+ path + "key.bin ";
-    std::string iv = "-iv $(cat " + path + "iv.bin)";
+    std::string access_file_enc { credentials_path + "access.enc" };
+    std::string access_file_dec { credentials_path + "access.dec" };
+
+    /*std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/access.enc -out ../src/access.dec -pass ";*/
+    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in " + access_file_enc + " -out " + access_file_dec +  " -pass";
+    std::string file = "file:"+ credentials_path + "key.bin ";
+    std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
     std::string exec = cmd + file + iv;
 
     system(exec.c_str());
 
-    std::ifstream f("../src/access.dec");
+    /*std::ifstream f("../src/access.dec");*/
+    std::ifstream f(access_file_dec);
     std::string curr_line;
     bool flag = false;
 
     if (!f.good()) {
-        std_out("[FILE NOT FOUND] ../src/access.enc no such file");
+        /*std_out("[FILE NOT FOUND] ../src/access.enc no such file");*/
+        std_out("[FILE NOT FOUND] access.enc no such file");
         exit(1);
     } else {
         if (f.is_open()) {
@@ -190,14 +203,18 @@ bool access_granted(const std::string& path)
                 flag = true;
             }
         } else {
-            std_out("[FILE ACCESS] cannot read from ../src/access.enc");
+            std_out("[FILE ACCESS] cannot read from access.enc");
             f.close();
             exit(1);
         }
     }
 
     f.close();
-    system("rm -f ../src/access.dec");
+
+    /*system("rm -f ../src/access.dec");*/
+    std::string delete_file_path { access_file_dec };
+    std::string delete_command { "rm -f " + delete_file_path };
+    system(delete_command.c_str());
 
     if (!flag) {
         return false;
@@ -206,12 +223,14 @@ bool access_granted(const std::string& path)
     }
 }
 
-void decrypt_vault(const std::string& path)
+void decrypt_vault()
 {
-    if (access_granted(path)) {
-        std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/passwords.enc -out ../src/passwords.dec -pass ";
-        std::string file = "file:"+ path + "key.bin ";
-        std::string iv = "-iv $(cat " + path + "iv.bin)";
+    if (access_granted()) {
+
+        /*std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/passwords.enc -out ../src/passwords.dec -pass ";*/
+        std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in " + passwords_file_enc + " -out " + passwords_file_dec + " -pass";
+        std::string file = "file:"+ credentials_path + "key.bin ";
+        std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
         std::string exec = cmd + file + iv;
         system(exec.c_str());
         return;
@@ -221,17 +240,27 @@ void decrypt_vault(const std::string& path)
     }
 }
 
-void encrypt_vault(const std::string& path)
+void encrypt_vault()
 {
-    if (access_granted(path)) {
-        std::ofstream filet("../src/passwords.enc", std::ofstream::out | std::ofstream::trunc);
+    if (access_granted()) {
+
+        /*std::ofstream filet("../src/passwords.enc", std::ofstream::out | std::ofstream::trunc);*/
+        std::ofstream filet(passwords_file_enc, std::ofstream::out | std::ofstream::trunc);
         filet.close();
-        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in ../src/passwords.dec -out ../src/passwords.enc -pass ";
-        std::string file = "file:"+ path + "key.bin ";
-        std::string iv = "-iv $(cat " + path + "iv.bin)";
+
+        /*std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in ../src/passwords.dec -out ../src/passwords.enc -pass ";*/
+
+        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + passwords_file_dec + " -out " + passwords_file_enc + " -pass";
+        std::string file = "file:"+ credentials_path + "key.bin ";
+        std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
         std::string exec = cmd + file + iv;
         system(exec.c_str());
-        system("rm -rf ../src/passwords.dec");
+
+        /*system("rm -rf ../src/passwords.dec");*/
+        std::string delete_file_path { passwords_file_dec };
+        std::string delete_command { "rm -f " + delete_file_path };
+        system(delete_command.c_str());
+
         return;
     } else {
         std_out("[ACCESS DENIED] cannot encrypt vault");
@@ -239,15 +268,19 @@ void encrypt_vault(const std::string& path)
     }
 }
 
-void add_new_entry(std::string& site_name, std::string& email, std::string& password, const std::string& path)
+void add_new_entry(std::string& site_name, std::string& email, std::string& password)
 {
-    decrypt_vault(path);
+    decrypt_vault();
     std::string line;
     line.append(site_name+";");
     line.append(email+";");
     line.append(password+";");
+
     std::ofstream ofs;
-    ofs.open("../src/passwords.dec", std::ios::app);
+
+    /*ofs.open("../src/passwords.dec", std::ios::app);*/
+    ofs.open(passwords_file_dec, std::ios::app);
+
     if(ofs.is_open()) {
         ofs << line << "\n";
     } else {
@@ -255,12 +288,13 @@ void add_new_entry(std::string& site_name, std::string& email, std::string& pass
         exit(1);
     }
     ofs.close();
-    encrypt_vault(path);
+    encrypt_vault();
 }
 
-void delete_single_entry(const std::string& site_name, const std::string& path,  const int index)
+void delete_single_entry(const std::string& site_name,  const int index)
 {
-    std::ofstream file("../src/passwords.dec", std::ios_base::app);
+    /*std::ofstream file("../src/passwords.dec", std::ios_base::app);*/
+    std::ofstream file(passwords_file_dec, std::ios_base::app);
     const int entries_size (entries.size());
     for (int i = 0; i < entries_size; i++) {
         if (i != index) {
@@ -272,19 +306,23 @@ void delete_single_entry(const std::string& site_name, const std::string& path, 
         }
     }
     file.close();
-    encrypt_vault(path);
+    encrypt_vault();
     std_out("[INFO] Deletion Successful");
 }
 
-void delete_entry(const std::string& site_name, const std::string& path)
+void delete_entry(const std::string& site_name)
 {
-    decrypt_vault(path);
-    load_passwords(passwords_file);
+    decrypt_vault();
+    load_passwords();
+
     bool found = false;
     std::vector<int> found_pos;
+
     int first_found_index;
     std::unordered_map<int, entry> map;
+
     const int entries_size (entries.size());
+
     for (int i = 0; i < entries_size; i++) {
         if (entries[i].site_name == site_name) {
             found = true;
@@ -312,11 +350,13 @@ void delete_entry(const std::string& site_name, const std::string& path)
         std_out("\t" + entries[first_found_index].site_name);
         std_out("email     : " + entries[first_found_index].email);
         std_out("password  : " + entries[first_found_index].password);
+
         std::cout << "y/n > ";
         char input;
         std::cin >> input;
+
         if (input == 'y') {
-            delete_single_entry(site_name, path, first_found_index);
+            delete_single_entry(site_name, first_found_index);
             std_out("[INFO] Entry deleted from vault");
             exit(0);
         } else if (input == 'n') {
@@ -355,7 +395,7 @@ void delete_entry(const std::string& site_name, const std::string& path)
                 char input;
                 std::cin >> input;
                 if (input == 'y') {
-                    delete_single_entry(site_name, path, index);
+                    delete_single_entry(site_name, index);
                     return;
                 } else if (input == 'n') {
                     std_out("[INFO] operation cancelled");
@@ -405,7 +445,8 @@ void delete_entry(const std::string& site_name, const std::string& path)
                         it++;
                     }
 
-                    std::ofstream file("../src/passwords.dec", std::ios_base::app);
+                    /*std::ofstream file("../src/passwords.dec", std::ios_base::app);*/
+                    std::ofstream file(passwords_file_dec, std::ios_base::app);
                     const int entries_size (entries.size());
                     for (int i = 0; i < entries_size; i++) {
                         std::string line;
@@ -416,7 +457,7 @@ void delete_entry(const std::string& site_name, const std::string& path)
                     }
 
                     file.close();
-                    encrypt_vault(path);
+                    encrypt_vault();
                     std_out("[INFO] Deleted " + std::to_string(delete_indices.size()) + " entries" );
 
                 } else if (input == 'n') {
@@ -444,7 +485,8 @@ void delete_entry(const std::string& site_name, const std::string& path)
                     entries.erase(entries.begin()+i);
                 }
 
-                std::ofstream file("../src/passwords.dec", std::ios_base::app);
+                /*std::ofstream file("../src/passwords.dec", std::ios_base::app);*/
+                std::ofstream file(passwords_file_dec, std::ios_base::app);
                 for (int i = 0; i < entries_size; i++) {
                         std::string line;
                         line.append(entries[i].site_name+";");
@@ -453,7 +495,7 @@ void delete_entry(const std::string& site_name, const std::string& path)
                         file << line << "\n";
                 }
                 file.close();
-                encrypt_vault(path);
+                encrypt_vault();
                 std_out("[INFO] Deleted all entries");
                 exit(0);
             } else if (input == 'n') {
@@ -485,8 +527,8 @@ int main(int argc, char *argv[])
             usage();
             exit(1);
         } else {
-            decrypt_vault(credentials_path);
-            load_passwords(passwords_file);
+            decrypt_vault();
+            load_passwords();
             get_entry(argv[2]);
             exit(0);
         }
@@ -498,7 +540,7 @@ int main(int argc, char *argv[])
             std::string site_name = (std::string)argv[2];
             std::string email = (std::string)argv[3];
             std::string password = (std::string)argv[4];
-            add_new_entry(site_name, email, password, credentials_path);
+            add_new_entry(site_name, email, password);
             exit(0);
         }
     } else if (arg1 == 'd') {
@@ -507,7 +549,7 @@ int main(int argc, char *argv[])
             exit(1);
         } else {
             std::string site_name = (std::string)argv[2];
-            delete_entry(site_name, credentials_path);
+            delete_entry(site_name);
         }
     } else {
         usage();

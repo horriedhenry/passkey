@@ -169,9 +169,9 @@ void usage()
     std_out("d, delete     delete entry from vault");
     std_out("");
     std_out("args : ");
-    std_out("a,            [sitename email password credentials_folder_path]");
-    std_out("g,            [sitename credentials_folder_path]");
-    std_out("d,            [sitename credentials_folder_path]");
+    std_out("a,            [sitename email password]");
+    std_out("g,            [sitename]");
+    std_out("d,            [sitename]");
     std_out("");
     std_out("credentials : ");
     std_out("credentials folder should have 'key.bin' and 'iv.bin' files");
@@ -183,7 +183,7 @@ bool access_granted()
     std::string access_file_dec { credentials_path + "access.dec" };
 
     /*std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/access.enc -out ../src/access.dec -pass ";*/
-    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in " + access_file_enc + " -out " + access_file_dec +  " -pass";
+    std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in " + access_file_enc + " -out " + access_file_dec +  " -pass ";
     std::string file = "file:"+ credentials_path + "key.bin ";
     std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
     std::string exec = cmd + file + iv;
@@ -231,7 +231,7 @@ void decrypt_vault()
     if (access_granted()) {
 
         /*std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in ../src/passwords.enc -out ../src/passwords.dec -pass ";*/
-        std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in " + passwords_file_enc + " -out " + passwords_file_dec + " -pass";
+        std::string cmd = "openssl enc -d -aes-256-cbc -pbkdf2 -in " + passwords_file_enc + " -out " + passwords_file_dec + " -pass ";
         std::string file = "file:"+ credentials_path + "key.bin ";
         std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
         std::string exec = cmd + file + iv;
@@ -253,7 +253,7 @@ void encrypt_vault()
 
         /*std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in ../src/passwords.dec -out ../src/passwords.enc -pass ";*/
 
-        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + passwords_file_dec + " -out " + passwords_file_enc + " -pass";
+        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + passwords_file_dec + " -out " + passwords_file_enc + " -pass ";
         std::string file = "file:"+ credentials_path + "key.bin ";
         std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
         std::string exec = cmd + file + iv;
@@ -292,6 +292,7 @@ void add_new_entry(std::string& site_name, std::string& email, std::string& pass
     }
     ofs.close();
     encrypt_vault();
+    std_out("[INFO] New entry added successfully -_-");
 }
 
 void delete_single_entry(const std::string& site_name,  const int index)
@@ -557,10 +558,11 @@ void initialize_vault()
         // access.enc exist so that we don't have to over-write the existing
         // passwords.enc or access.enc files, as this is not the first time
         // the program is ran
+
         if(fs::exists(passwords_file_enc) && fs::exists(credentials_path + "access.enc"))
         {
             // just return if both the files exist
-            std_out("[DEBUG] both passwords and access files exist, initialize_value\n");
+            std_out("[DEBUG] both passwords and access files exist\n");
             return;
         }
     }
@@ -596,7 +598,7 @@ void initialize_vault()
 
         // encrypt access.dec and passwords.dec and delete them
         // encrypt passwords.dec
-        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + passwords_file_dec + " -out " + passwords_file_enc + " -pass";
+        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + passwords_file_dec + " -out " + passwords_file_enc + " -pass ";
         std::string file = "file:"+ credentials_path + "key.bin ";
         std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
         std::string exec = cmd + file + iv;
@@ -610,7 +612,7 @@ void initialize_vault()
         // encrypt access.enc
         std::string access_file_enc { credentials_path + "access.enc" };
 
-        cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + access_file_dec + " -out " + access_file_enc + " -pass";
+        cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + access_file_dec + " -out " + access_file_enc + " -pass ";
         file = "file:"+ credentials_path + "key.bin ";
         iv = "-iv $(cat " + credentials_path + "iv.bin)";
         exec = cmd + file + iv;
@@ -625,12 +627,12 @@ void initialize_vault()
 
 int main(int argc, char *argv[])
 {
+    initialize_vault();
     if (argc == 1) {
         usage();
         exit(1);
     }
 
-    initialize_vault();
     const char arg1 = (char)*argv[1];
     if (arg1 == 'g') {
         if (argc != 3) {

@@ -4,6 +4,9 @@
 #include <unordered_map>
 #include <vector>
 #include <cstdlib>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 std::string credentials_path = getenv("credentials_path");
 std::string passwords_file_dec = credentials_path + "passwords.dec";
@@ -514,6 +517,112 @@ void delete_entry(const std::string& site_name)
 
 }
 
+void initialize_vault()
+{
+    // check if the credentials_path exist
+    bool vault_exist = false;
+
+    if (fs::exists(credentials_path))
+    {
+        if(!fs::is_directory(credentials_path))
+        {
+            std_out("[ERROR] Credentials path is not a directory\n");
+            std_out("[INFO]  Create a directory for the vault and add it to env");
+            exit(1);
+        } else {
+            vault_exist = true;
+        }
+    } else {
+        std_out("[ERROR] Credentials Directory does not exist.");
+        std_out("[INFO]  Create a directory for the vault and add it to env");
+        exit(1);
+    } 
+
+    // if the vault exist check if passwords.enc and all the other files exist
+    // or not ?? if a file does not exist let the user know
+
+    if (vault_exist)
+    {
+        // check if key.bin & iv.bin files exist
+        if(!fs::exists(credentials_path + "key.bin") && !fs::exists(credentials_path + "iv.bin"))
+        {
+            std_out("[ERROR] key.bin file does not exist\n");
+            std_out("[ERROR] iv.bin file does not exist\n");
+            std_out("[INFO]  We need both key.bin and iv.bin files, it does not work if only one exists\n");
+            std_out("[INFO]  Create both key.bin and iv.bin");
+            exit(1);
+        }
+
+        // if both key.bin and iv.bin exist then check if passwords.enc and
+        // access.enc exist so that we don't have to over-write the existing
+        // passwords.enc or access.enc files, as this is not the first time
+        // the program is ran
+        if(fs::exists(passwords_file_enc) && fs::exists(credentials_path + "access.enc"))
+        {
+            // just return if both the files exist
+            std_out("[DEBUG] both passwords and access files exist, initialize_value\n");
+            return;
+        }
+    }
+
+    // Create access.enc passwords.enc files
+    if (vault_exist)
+    {
+        std_out("[INFO] Initializing Vault");
+        std::string access_file_dec    { credentials_path + "access.dec"};
+
+        // create access.dec
+        std::ofstream access_write(access_file_dec);
+        if(access_write)
+        {
+            access_write << "true";
+            access_write.close();
+            std_out("[INFO] Created access file");
+        } else {
+            std_out("[ERROR] Failed to create access file");
+            exit(1);
+        }
+
+        // create passwords.dec
+        std::ofstream passwords_write(passwords_file_dec);
+        if(passwords_write)
+        {
+            passwords_write.close();
+            std_out("[INFO] Created passwords file");
+        } else {
+            std_out("[ERROR] Failed to create passwords file");
+            exit(1);
+        }
+
+        // encrypt access.dec and passwords.dec and delete them
+        // encrypt passwords.dec
+        std::string cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + passwords_file_dec + " -out " + passwords_file_enc + " -pass";
+        std::string file = "file:"+ credentials_path + "key.bin ";
+        std::string iv = "-iv $(cat " + credentials_path + "iv.bin)";
+        std::string exec = cmd + file + iv;
+        system(exec.c_str());
+
+        // delete passwords.dec
+        std::string delete_file_path { passwords_file_dec };
+        std::string delete_command { "rm -f " + delete_file_path };
+        system(delete_command.c_str());
+
+        // encrypt access.enc
+        std::string access_file_enc { credentials_path + "access.enc" };
+
+        cmd = "openssl enc -aes-256-cbc -pbkdf2 -in " + access_file_dec + " -out " + access_file_enc + " -pass";
+        file = "file:"+ credentials_path + "key.bin ";
+        iv = "-iv $(cat " + credentials_path + "iv.bin)";
+        exec = cmd + file + iv;
+        system(exec.c_str());
+
+        // delete access.dec
+        delete_file_path = access_file_dec;
+        delete_command = "rm -f " + delete_file_path;
+        system(delete_command.c_str());
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc == 1) {
@@ -521,6 +630,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    initialize_vault();
     const char arg1 = (char)*argv[1];
     if (arg1 == 'g') {
         if (argc != 3) {

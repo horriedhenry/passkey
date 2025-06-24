@@ -11,4 +11,4 @@ set(SOURCES
     src/main.cpp
 )
 
-add_executable(main ${SOURCES})
+add_executable(passkey ${SOURCES})
